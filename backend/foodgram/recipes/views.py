@@ -1,3 +1,13 @@
-from django.shortcuts import render
+# from django.shortcuts import render
 
-# Create your views here.
+
+def index():
+    pass
+
+
+def profile(request, username):
+    pass
+
+
+def recipe():
+    pass
