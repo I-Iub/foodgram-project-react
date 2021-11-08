@@ -43,12 +43,16 @@ class Subscription(models.Model):
                 name='unique_subscription'
             ),
             models.CheckConstraint(
-                check=~models.Q(
-                    author=models.F('user')), name='user_is_not_author'
+                check=~models.Q(author=models.F('user')),
+                name='user_is_not_author'
                 )
         ]
         verbose_name = 'Подписка',
         verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return (f'Подписки пользователя {self.user.first_name}'
+                f'{self.user.last_name}')
 
 
 class Favorite(models.Model):
@@ -66,4 +70,5 @@ class Favorite(models.Model):
         verbose_name_plural = 'Избранное'
 
     def __str__(self):
-        return f'Избранное пользователя {self.user.first_name} {self.user.last_name}'
+        return (f'Избранное пользователя {self.user.first_name}'
+                f'{self.user.last_name}')
