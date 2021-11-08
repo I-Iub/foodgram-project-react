@@ -71,7 +71,7 @@ class Ingredient(models.Model):
 class Measurement(models.Model):
     name = models.CharField(
         max_length=200,
-        verboes_name='Компонент'
+        verbose_name='Компонент'
     )
     measure = models.CharField(
         max_length=100,

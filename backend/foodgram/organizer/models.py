@@ -1,5 +1,5 @@
 from django.db import models
-from organizer.models import Recipe
+from recipes.models import Recipe
 from users.models import User
 
 
@@ -19,11 +19,13 @@ class ShoppingCart(models.Model):
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='users'
     )
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='authors'
     )
 
 
