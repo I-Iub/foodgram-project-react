@@ -23,7 +23,7 @@ class Recipe(models.Model):
     name = models.CharField(max_length=200, verbose_name='Название блюда')
     image = models.ImageField()
     text = models.TextField(verbose_name='Рецепт')
-    cooking_time = models.DateTimeField(  # сделать валидацию (>= 1)
+    cooking_time = models.DurationField(  # сделать валидацию (>= 1)
         verbose_name='Время приготовления, мин.'
     )
 
