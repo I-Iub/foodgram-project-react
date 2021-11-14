@@ -28,11 +28,7 @@ class Recipe(models.Model):
     name = models.CharField(max_length=200, verbose_name='Название блюда')
     image = models.ImageField()
     text = models.TextField(verbose_name='Рецепт')
-    # cooking_time = models.DurationField(
-    #     verbose_name='Время приготовления, мин.',
-    #     default=RECIPE_MIN_COOKING_TIME
-    # )  # master
-    cooking_time = models.DurationField(  # сделать валидацию (>= 1)
+    cooking_time = models.DurationField(
         verbose_name='Время приготовления, мин.',
         default=RECIPE_MIN_COOKING_TIME
     )
@@ -44,6 +40,8 @@ class Recipe(models.Model):
                 name=f'cooking_time__gte_{str(RECIPE_MIN_COOKING_TIME)}_minute'
             )
         ]
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
 
     def __str__(self):
         return self.name[:20]
@@ -53,6 +51,10 @@ class Tag(models.Model):
     name = models.CharField(unique=True, max_length=200)
     color = models.ImageField(unique=True, max_length=7)
     slug = models.SlugField(unique=True, max_length=200)
+
+    class Meta:
+        verbose_name = 'Тэг'
+        verbose_name_plural = 'Тэги'
 
     def __str__(self):
         return self.name
