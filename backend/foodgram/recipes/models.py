@@ -49,7 +49,7 @@ class Recipe(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(unique=True, max_length=200)
-    color = models.ImageField(unique=True, max_length=7)
+    color = models.CharField(unique=True, max_length=7)
     slug = models.SlugField(unique=True, max_length=200)
 
     class Meta:
@@ -110,3 +110,6 @@ class Measurement(models.Model):
         ]
         verbose_name = 'Компонент',
         verbose_name_plural = 'Компоненты'
+
+    def __str__(self):
+        return self.name
