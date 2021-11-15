@@ -62,7 +62,8 @@ class Favorite(models.Model):
     )
     recipe = models.ForeignKey(
         Recipe,
-        on_delete=models.PROTECT
+        on_delete=models.PROTECT,
+        related_name='favorites'
     )
 
     class Meta:

@@ -1,9 +1,9 @@
 from rest_framework import viewsets
-from rest_framework.pagination import PageNumberPagination
 
 from organizer.models import Subscription
 from recipes.models import Measurement, Recipe, Tag
 from users.models import User
+from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
 from .serializers import (MeasurementSerializer, RecipeSerializer,
                           SubscriptionSerializer, TagSerializer,
@@ -18,11 +18,13 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = (RecipeAuthorOrReadOnly,)
 
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+    permission_classes = (OrganizerOwner,)
 
 
 class TagViewSet(viewsets.ModelViewSet):

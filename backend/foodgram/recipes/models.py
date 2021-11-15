@@ -88,7 +88,7 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return self.measurement_unit
+        return str(self.measurement)
 
 
 class Measurement(models.Model):
@@ -112,4 +112,4 @@ class Measurement(models.Model):
         verbose_name_plural = 'Компоненты'
 
     def __str__(self):
-        return self.name
+        return self.name[:20]
