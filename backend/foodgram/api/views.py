@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.pagination import PageNumberPagination
 
 from organizer.models import Subscription
 from recipes.models import Measurement, Recipe, Tag
@@ -27,6 +28,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
