@@ -43,10 +43,7 @@ INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
     'rest_framework',
-<<<<<<< HEAD
     'djoser',
-=======
->>>>>>> 314eb4cc8e15dd34674119ad31d9245e47bf3fa2
     'django_filters',
 ]
 

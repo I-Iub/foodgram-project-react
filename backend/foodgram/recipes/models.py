@@ -61,7 +61,7 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    measurement_unit = models.ForeignKey(
+    measurement = models.ForeignKey(
         'Measurement',
         on_delete=models.PROTECT,
         related_name='ingredients',
@@ -76,7 +76,7 @@ class Ingredient(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['measurement_unit', 'amount'],
+                fields=['measurement', 'amount'],
                 name='unique_ingredient_amount'
             ),
             models.CheckConstraint(
@@ -96,7 +96,7 @@ class Measurement(models.Model):
         max_length=200,
         verbose_name='Компонент'
     )
-    measure = models.CharField(
+    measurement_unit = models.CharField(
         max_length=100,
         verbose_name='Единица измерения'
     )
@@ -104,7 +104,7 @@ class Measurement(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['name', 'measure'],
+                fields=['name', 'measurement_unit'],
                 name='unique_measurement'
             )
         ]

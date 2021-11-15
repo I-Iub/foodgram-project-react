@@ -4,14 +4,14 @@ from .models import Ingredient, Measurement, Recipe, Tag
 
 
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'measurement_unit', 'amount')
-    search_fields = ('measurement_unit',)
-    list_filter = ('measurement_unit',)
+    list_display = ('pk', 'measurement', 'amount')
+    search_fields = ('measurement',)
+    list_filter = ('measurement',)
     empty_value_display = '-пусто-'
 
 
 class MeasurementAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'measure')
+    list_display = ('pk', 'name', 'measurement_unit')
     search_fields = ('name',)
     list_filter = ('name',)
     empty_value_display = '-пусто-'
