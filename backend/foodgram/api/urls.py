@@ -1,10 +1,15 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from .views import (MeasurementViewSet, RecipeViewSet, SubscriptionViewSet,
-                    TagViewSet, UserViewSet)
+from .views import (FavoriteViewSet, MeasurementViewSet, RecipeViewSet,
+                    SubscriptionViewSet, TagViewSet, UserViewSet)
 
 v1 = routers.DefaultRouter()
+v1.register(
+    r'recipes/(?P<recipe_id>\d+)/favorites/',
+    FavoriteViewSet,
+    basename='favorites'
+)
 v1.register('recipes', RecipeViewSet, basename='recipes')
 v1.register('tags', TagViewSet, basename='tags')
 v1.register(

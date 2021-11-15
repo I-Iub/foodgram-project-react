@@ -1,9 +1,15 @@
 from rest_framework import serializers
 
-from organizer.models import Subscription
+from organizer.models import Favorite, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 # from recipes.models import Ingredient, Recipe, Tag
 from users.models import User
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
 
 
 class MeasurementSerializer(serializers.ModelSerializer):
