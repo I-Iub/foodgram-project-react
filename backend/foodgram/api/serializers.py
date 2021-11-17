@@ -90,7 +90,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True)
-    image = Base64ToImageField(read_only=True)
+    # image = Base64ToImageField(read_only=True)
+    image = Base64ToImageField()
     cooking_time = serializers.DurationField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -117,30 +118,28 @@ class RecipeSerializer(serializers.ModelSerializer):
     #     return value
 
     def create(self, validated_data):
-        # tag_list = self.initial_data.get('tags')
-        # tags = []
-        # for tag_id in tag_list:
-        #     tags += [Tag.objects.get(id=tag_id)]
-        # print(validated_data)
-        # # validated_data.pop('tags')
-        # recipe = Recipe.objects.create(*tags, **validated_data)
-        # return recipe
+        validated_data.pop('ingredients')  # ингредиенты обрабатываются ниже
+        # создаём копию validated_data, чтобы не изменять исходные данные:
+        validated_data_popped = validated_data.copy()
+        # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
+        validated_data_popped.pop('image')
+
+        # print('validated_data_popped', validated_data_popped)
+        # print(Recipe.objects.filter(**validated_data_popped).exists())
+
+        # Проверка наличия в базе Рецепта, похожего на сохраняемый
+        if Recipe.objects.filter(**validated_data_popped).exists():
+            raise serializers.ValidationError('У вас уже есть такой рецепт')
+
         tag_list = self.initial_data.get('tags')
-        # tags = []
-        # for tag_id in tag_list:
-        #     tags += [Tag.objects.get(id=tag_id)]
-        # print('self.initial_data', self.initial_data)
-        # print()
-        # print('validated_data', validated_data)
-        # print()
         if tag_list:
             tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
         else:
             raise serializers.ValidationError('Не указаны теги')
+
         ingredients_list = []
         if 'ingredients' not in self.initial_data:
             raise serializers.ValidationError('Не указаны ингредиенты')
-
         # initial_ingredients_list: [{'id': <int>, 'amount': <int>},]
         initial_ingredients_list = self.initial_data.get('ingredients')
         for ingredient_dict in initial_ingredients_list:
@@ -159,14 +158,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     measurement=measurement_object,
                     amount=amount
                 )
-
-            print()
-            print('ingredient_object', ingredient_object)
             ingredients_list += [ingredient_object]
-        print()
-        print('ingredients_list', ingredients_list)
-        print()
-        validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
         recipe.ingredients.set(ingredients_list)

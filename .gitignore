@@ -134,3 +134,4 @@ dmypy.json
 .vscode/
 
 api_requests.http
+base64_strings

@@ -38,7 +38,13 @@ class Recipe(models.Model):
             models.CheckConstraint(
                 check=models.Q(cooking_time__gte=RECIPE_MIN_COOKING_TIME),
                 name=f'cooking_time__gte_{str(RECIPE_MIN_COOKING_TIME)}_minute'
-            )
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    'author', 'name', 'text', 'cooking_time'
+                ],
+                name='unique_recipe'
+            ),
         ]
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
