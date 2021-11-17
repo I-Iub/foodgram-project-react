@@ -5,8 +5,8 @@ from .models import Ingredient, Measurement, Recipe, Tag
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('pk', 'measurement', 'amount')
-    search_fields = ('measurement',)
-    list_filter = ('measurement',)
+    search_fields = ('measurement__name',)
+    list_filter = ('measurement__name',)
     empty_value_display = '-пусто-'
 
 

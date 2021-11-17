@@ -40,6 +40,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_fields = ('tags',)
     ordering_fields = ('name',)
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()

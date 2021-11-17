@@ -26,7 +26,7 @@ class Recipe(models.Model):
         verbose_name='Ингредиенты'
     )
     name = models.CharField(max_length=200, verbose_name='Название блюда')
-    image = models.ImageField()
+    image = models.ImageField(upload_to='recipes/')
     text = models.TextField(verbose_name='Рецепт')
     cooking_time = models.DurationField(
         verbose_name='Время приготовления, мин.',

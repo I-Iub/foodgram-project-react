@@ -1,4 +1,8 @@
+from base64 import b64decode
+from datetime import timedelta
+
 from rest_framework import serializers
+from django.core.files.base import ContentFile
 
 from organizer.models import Favorite, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
@@ -56,14 +60,38 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('email', 'id', 'username', 'first_name', 'last_name',)
 
 
+class Base64ToImageField(serializers.ImageField):
+    def to_internal_value(self, base64_string):
+        # encoded_string = base64_string.encode('utf-8')
+        if not base64_string:
+            return super().to_internal_value(None)  # ??? Проверить как будет работать!!!!!!!!!!!!!!!
+        if base64_string.startswith('data:image'):
+            description, image_string = base64_string.split(';base64,')  # format ~= data:image/X,
+            extension = description.split('/')[-1]  # разрешение файла
+            data = ContentFile(
+                b64decode(image_string), name='temp.' + extension
+            )
+        else:
+            image_string = base64_string
+            data = ContentFile(b64decode(image_string), name='temp.jpeg')
+        return super().to_internal_value(data)
+        # return data
+
+    # def to_internal_value(self, base64_string):
+    #     # base64_string = base64_string.split(',', maxsplit=1)[1]
+    #     encoded_string = base64_string.encode('utf-8')
+    #     return decodebytes(encoded_string)
+
+    # def to_representation():
+    #     pass
+
+
 class RecipeSerializer(serializers.ModelSerializer):
-    # author = serializers.SlugRelatedField(
-    #     slug_field='username', read_only=True,
-    #     default=serializers.CurrentUserDefault()
-    # )
-    author = UserSerializer()
-    tags = TagSerializer(many=True)
+    author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
+    tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True)
+    image = Base64ToImageField(read_only=True)
+    cooking_time = serializers.DurationField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -81,6 +109,71 @@ class RecipeSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         )
+
+    # def validate_tags(self, value):
+    #     print('VALUE', value)
+    #     # if not value:
+    #     #     raise serializers.ValidationError('Должен быть указан тэг(и)')
+    #     return value
+
+    def create(self, validated_data):
+        # tag_list = self.initial_data.get('tags')
+        # tags = []
+        # for tag_id in tag_list:
+        #     tags += [Tag.objects.get(id=tag_id)]
+        # print(validated_data)
+        # # validated_data.pop('tags')
+        # recipe = Recipe.objects.create(*tags, **validated_data)
+        # return recipe
+        tag_list = self.initial_data.get('tags')
+        # tags = []
+        # for tag_id in tag_list:
+        #     tags += [Tag.objects.get(id=tag_id)]
+        # print('self.initial_data', self.initial_data)
+        # print()
+        # print('validated_data', validated_data)
+        # print()
+        if tag_list:
+            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+        else:
+            raise serializers.ValidationError('Не указаны теги')
+        ingredients_list = []
+        if 'ingredients' not in self.initial_data:
+            raise serializers.ValidationError('Не указаны ингредиенты')
+
+        # initial_ingredients_list: [{'id': <int>, 'amount': <int>},]
+        initial_ingredients_list = self.initial_data.get('ingredients')
+        for ingredient_dict in initial_ingredients_list:
+            measurement_id = ingredient_dict.get('id')  # <int>
+            measurement_object = Measurement.objects.get(id=measurement_id)
+            amount = ingredient_dict.get('amount')  # <int>
+            if not Ingredient.objects.filter(
+                                             measurement=measurement_object,
+                                             amount=amount).exists():
+                ingredient_object = Ingredient.objects.create(
+                    measurement=measurement_object,
+                    amount=amount
+                )
+            else:
+                ingredient_object = Ingredient.objects.get(
+                    measurement=measurement_object,
+                    amount=amount
+                )
+
+            print()
+            print('ingredient_object', ingredient_object)
+            ingredients_list += [ingredient_object]
+        print()
+        print('ingredients_list', ingredients_list)
+        print()
+        validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags_objects)
+        recipe.ingredients.set(ingredients_list)
+        recipe.cooking_time = timedelta(
+            minutes=self.initial_data.get('cooking_time')
+        )
+        return recipe
 
     def get_is_favorited(self, object):
         return object.favorites.exists()
