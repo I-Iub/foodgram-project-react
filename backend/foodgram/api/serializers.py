@@ -3,11 +3,10 @@ from datetime import timedelta
 
 from rest_framework import serializers
 from django.core.files.base import ContentFile
-from rest_framework.validators import UniqueTogetherValidator
+# from rest_framework.validators import UniqueTogetherValidator
 
 from organizer.models import Favorite, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
-# from recipes.models import Ingredient, Recipe, Tag
 from users.models import User
 
 
@@ -165,8 +164,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
         validated_data_poped.pop('image')
 
-        # print('validated_data_popped', validated_data_popped)
-        # print(Recipe.objects.filter(**validated_data_popped).exists())
+        # print('validated_data_poped', validated_data_poped)
+        # print(Recipe.objects.filter(**validated_data_poped).exists())
 
         # Проверка наличия в базе Рецепта, похожего на сохраняемый
         if Recipe.objects.filter(**validated_data_poped).exists():
