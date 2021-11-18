@@ -28,7 +28,7 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='users'
+        related_name='subscriptions'
     )
     author = models.ForeignKey(
         User,

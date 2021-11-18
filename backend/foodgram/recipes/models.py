@@ -46,6 +46,7 @@ class Recipe(models.Model):
                 name='unique_recipe'
             ),
         ]
+        ordering = ['-id']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 

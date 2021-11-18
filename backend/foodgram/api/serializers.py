@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from rest_framework import serializers
 from django.core.files.base import ContentFile
+from rest_framework.validators import UniqueTogetherValidator
 
 from organizer.models import Favorite, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
@@ -43,6 +44,19 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
+class RecipeTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'color', 'slug')
+
+        def validate(self, data):
+            print()
+            print('self:', self)
+            print('data:', data)
+            print()
+            return data
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='username', read_only=True,
@@ -55,9 +69,21 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',)
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed'
+        )
+
+    def get_is_subscribed(self, object):
+        return object.subscriptions.exists()
 
 
 class Base64ToImageField(serializers.ImageField):
@@ -86,9 +112,17 @@ class Base64ToImageField(serializers.ImageField):
     #     pass
 
 
+# def recipe_tags_validate(self, value):
+#     print(self.context['request'].method)
+
+#     # raise serializers.ValidationError('В базе данных отсутствует тег с указанным слагом')
+#     return value
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
-    tags = TagSerializer(many=True, read_only=True)
+    # tags = TagSerializer(many=True, read_only=True, validators=[recipe_tags_validate])
+    tags = RecipeTagSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True)
     # image = Base64ToImageField(read_only=True)
     image = Base64ToImageField()
@@ -110,6 +144,13 @@ class RecipeSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         )
+        # validators = [  # не нужен в случае с ModelSerializer, т.к. прописан в модели
+        #     UniqueTogetherValidator(
+        #         queryset=Recipe.objects.all(),
+        #         fields=('author', 'name', 'text', 'cooking_time'),
+        #         message='UniqueTogetherValidator: У вас уже есть такой рецепт'
+        #     )
+        # ]
 
     # def validate_tags(self, value):
     #     print('VALUE', value)
@@ -120,15 +161,15 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('ingredients')  # ингредиенты обрабатываются ниже
         # создаём копию validated_data, чтобы не изменять исходные данные:
-        validated_data_popped = validated_data.copy()
+        validated_data_poped = validated_data.copy()
         # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
-        validated_data_popped.pop('image')
+        validated_data_poped.pop('image')
 
         # print('validated_data_popped', validated_data_popped)
         # print(Recipe.objects.filter(**validated_data_popped).exists())
 
         # Проверка наличия в базе Рецепта, похожего на сохраняемый
-        if Recipe.objects.filter(**validated_data_popped).exists():
+        if Recipe.objects.filter(**validated_data_poped).exists():
             raise serializers.ValidationError('У вас уже есть такой рецепт')
 
         tag_list = self.initial_data.get('tags')
@@ -172,3 +213,9 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_in_shopping_cart(self, object):
         return object.shopping_cart.exists()
+
+    # def to_representation(self, object):
+    #     return {
+    #         'name': object.name,
+    #         'message': 'Fuck you Spielberg!'
+    #     }
