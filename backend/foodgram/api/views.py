@@ -43,23 +43,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ordering_fields = ('name',)
 
     def list(self, request):
-        # необходимо валидировать слаг, который пришел с запросом и проверить что они есть в базе
-        # print()
-        # print('GET!!!')
-        # # print(request.query_params.getlist('tags'))
-        # print(request.GET)
         query_dict = request.query_params  # <QueryDict: {}>
         tags_slug_list = query_dict.getlist('tags')  # ['tag_slug1', ...]
-        # if tags_slug_list:
-        #     tags = Tag.objects.filter(slug__in=tags_slug_list)
-        #     tag_id_list = ['tags=' + str(tag.id) for tag in tags]
-        #     print(tag_id_list)
-        #     query_string = '&'.join(tag_id_list)
-        #     print(query_string)
-        #     print(type(query_string))
-        #     # # QueryDict(query_string)
-        #     # print(QueryDict(query_string))
-        #     # request.query_params = QueryDict(query_string)
         for tags_slug in tags_slug_list:
             if Tag.objects.filter(slug=tags_slug).exists():
                 print('exists')
@@ -70,10 +55,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 )
 
         queryset = Recipe.objects.filter(tags__slug__in=tags_slug_list)
-        # print(test_queryset)
-        # print(test_queryset.count())
-
-        # queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -82,25 +63,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    # def get_queryset(self):
-    #     # print(self.request.query_params.getlist('tags'))
-    #     tags = self.request.query_params.getlist('tags')
-    #     # author = self.request.query_params.getlist('author')
-    #     # print()
-    #     # print(tags)
-    #     # print()
-    #     if tags:
-    #         tags_queryset = Tag.objects.filter(slug__in=tags)
-    #         # print(tags_queryset)
-    #         # print()
-    #         tag_id_list = []
-    #         for tag in tags_queryset:
-    #             tag_id_list += [tag.id]
-    #         queryset = Recipe.objects.filter(tags__in=tag_id_list)
-    #         # print(queryset)
-    #         # print()
-    #     return Recipe.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
