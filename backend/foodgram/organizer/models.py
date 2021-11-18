@@ -33,7 +33,7 @@ class Subscription(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='authors'
+        related_name='subscriptions_on_author'
     )
 
     class Meta:

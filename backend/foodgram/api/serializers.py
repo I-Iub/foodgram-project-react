@@ -43,17 +43,17 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
-class RecipeTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+# class RecipeTagSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Tag
+#         fields = ('id', 'name', 'color', 'slug')
 
-        def validate(self, data):
-            print()
-            print('self:', self)
-            print('data:', data)
-            print()
-            return data
+#         def validate(self, data):
+#             print()
+#             print('self:', self)
+#             print('data:', data)
+#             print()
+#             return data
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -121,7 +121,7 @@ class Base64ToImageField(serializers.ImageField):
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
     # tags = TagSerializer(many=True, read_only=True, validators=[recipe_tags_validate])
-    tags = RecipeTagSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True)
     # image = Base64ToImageField(read_only=True)
     image = Base64ToImageField()
