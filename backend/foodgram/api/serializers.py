@@ -211,7 +211,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return object.favorites.exists()
 
     def get_is_in_shopping_cart(self, object):
-        return object.shopping_cart.exists()
+        return object.shopping_cart_of_recipe.exists()
 
     # def to_representation(self, object):
     #     return {

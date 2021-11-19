@@ -121,22 +121,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 is_in_shopping_cart not in ['0', '1']
                 ):
             return Response(
-                    "Ошибка: в параметре запроса 'is_in_shopping_cart' должны "
+                    "Ошибка: в параметре запроса 'is_in_shopping_cart' должен "
                     "быть 0 или 1",
                     status=status.HTTP_400_BAD_REQUEST
             )
-        # фильтруем рецепты из списка покупок ######################################################################
+        # фильтруем рецепты из списка покупок
         if is_in_shopping_cart == '1':
-            # print('!!!')
-            cart_list = ShoppingCart.objects.prefetch_related(
-                'recipe'
-            ).filter(user=request.user.id)
-            print(cart_list)
-            # recipe_list = [cart.recipe.all() for cart in cart_list]  # [<ManyRelatedManager object>, ...]
-            # print(recipe_list)
-
-            # queryset = [recipe for recipe in queryset if recipe in recipe_list]
-            # print(queryset)
+            shopping_carts = ShoppingCart.objects.filter(
+                user=request.user.id
+            ).select_related('recipe')
+            recipes_list = [cart.recipe for cart in shopping_carts]
+            queryset = [
+                recipe for recipe in queryset if recipe in recipes_list
+            ]
 
         page = self.paginate_queryset(queryset)
         if page is not None:
