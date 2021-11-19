@@ -7,12 +7,14 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_cart',
+        related_name='user_shopping_cart',
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    recipe = models.ForeignKey(
         Recipe,
-        related_name='shopping_cart'
+        on_delete=models.PROTECT,
+        related_name='shopping_cart_of_recipe',
+        verbose_name='Рецепт'
     )
 
     class Meta:
