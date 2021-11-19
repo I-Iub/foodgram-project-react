@@ -20,8 +20,8 @@ class ShoppingCart(models.Model):
         verbose_name_plural = 'Списки покупок'
 
     def __str__(self):
-        return (f'Список покупок пользователя {self.user.first_name}'
-                f'{self.user.last_name}')
+        return (f'Список покупок. Запись {self.id}; '
+                f'Пользователь {self.user.username}')
 
 
 class Subscription(models.Model):

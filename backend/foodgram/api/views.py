@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 
-from organizer.models import Favorite, Subscription
+from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Measurement, Recipe, Tag
 from users.models import User
 from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
@@ -99,7 +99,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         is_favorited = query_dict.get('is_favorited')
         # проверяем, что в is_favorited передали корректное значение:
-        if is_favorited not in ['0', '1']:
+        if is_favorited is not None and is_favorited not in ['0', '1']:
             return Response(
                     "Ошибка: в параметре запроса 'is_favorited' должны быть "
                     "0 или 1",
@@ -113,6 +113,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 ).only('recipe')
             ]
             queryset = queryset.filter(pk__in=recipe_id_list)
+
+        is_in_shopping_cart = query_dict.get('is_in_shopping_cart')
+        # проверяем, что в is_favorited передали корректное значение:
+        # print(is_in_shopping_cart)
+        if is_in_shopping_cart is not None and (
+                is_in_shopping_cart not in ['0', '1']
+                ):
+            return Response(
+                    "Ошибка: в параметре запроса 'is_in_shopping_cart' должны "
+                    "быть 0 или 1",
+                    status=status.HTTP_400_BAD_REQUEST
+            )
+        # фильтруем рецепты из списка покупок ######################################################################
+        if is_in_shopping_cart == '1':
+            # print('!!!')
+            cart_list = ShoppingCart.objects.prefetch_related(
+                'recipe'
+            ).filter(user=request.user.id)
+            print(cart_list)
+            # recipe_list = [cart.recipe.all() for cart in cart_list]  # [<ManyRelatedManager object>, ...]
+            # print(recipe_list)
+
+            # queryset = [recipe for recipe in queryset if recipe in recipe_list]
+            # print(queryset)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
