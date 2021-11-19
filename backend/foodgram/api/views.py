@@ -8,6 +8,7 @@ from recipes.models import Measurement, Recipe, Tag
 from users.models import User
 from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
+from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           RecipeSerializer, SubscriptionSerializer,
                           TagSerializer, UserSerializer)
@@ -129,7 +130,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if is_in_shopping_cart == '1':
             shopping_carts = ShoppingCart.objects.filter(
                 user=request.user.id
-            ).select_related('recipe')
+            ).select_related('recipe')  # .only('recipe') ???
             recipes_list = [cart.recipe for cart in shopping_carts]
             queryset = [
                 recipe for recipe in queryset if recipe in recipes_list
@@ -150,7 +151,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+    pagination_class = CustomPagination
     permission_classes = (OrganizerOwner,)
+
+    def list(self, request):
+        query_dict = request.query_params  # <QueryDict: {}>
+        print(query_dict)
+        queryset = Subscription.objects.all()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ModelViewSet):
