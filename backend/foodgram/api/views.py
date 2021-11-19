@@ -1,7 +1,6 @@
-from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, serializers, status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 
 from organizer.models import Favorite, Subscription
@@ -98,7 +97,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 author__in=author_id_int
             ).distinct()  # только уникальные записи
 
-        # print(query_dict)
+        is_favorited = query_dict.get('is_favorited')
+        # проверяем, что в is_favorited передали корректное значение:
+        if is_favorited not in ['0', '1']:
+            return Response(
+                    "Ошибка: в параметре запроса 'is_favorited' должны быть "
+                    "0 или 1",
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        # фильтруем избранные рецепты
+        if is_favorited == '1':
+            recipe_id_list = [
+                favorite.recipe.id for favorite in Favorite.objects.filter(
+                    user=request.user.id
+                ).only('recipe')
+            ]
+            queryset = queryset.filter(pk__in=recipe_id_list)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

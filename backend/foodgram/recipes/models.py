@@ -46,7 +46,7 @@ class Recipe(models.Model):
                 name='unique_recipe'
             ),
         ]
-        ordering = ['-id']
+        ordering = ['-id']  # должно быть по дате публикации
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
