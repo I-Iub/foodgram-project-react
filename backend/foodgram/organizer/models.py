@@ -49,11 +49,12 @@ class Subscription(models.Model):
                 name='user_is_not_author'
                 )
         ]
-        verbose_name = 'Подписка',
+        ordering = ['user']
+        verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return (f'Подписки пользователя {self.user.first_name}'
+        return (f'Подписка id={self.id} пользователя {self.user.first_name}'
                 f'{self.user.last_name}')
 
 

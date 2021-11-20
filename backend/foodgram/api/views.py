@@ -34,10 +34,6 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     ordering_fields = ('name',)
 
 
-class AuthorIdException(Exception):
-    """В параметре запроса "author" должно быть указано натуральное число"""
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
@@ -75,7 +71,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             try:
                 author_id_int = [  # [<int>, ...]
                     int(author_id_str) for author_id_str in author_id_list
-                ]
+                ]  # добавить проверку, что число должно быть больше нуля
             except ValueError:
                 return Response(
                     "Ошибка: в параметре запроса 'author' должно быть указано "
@@ -102,7 +98,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         # проверяем, что в is_favorited передали корректное значение:
         if is_favorited is not None and is_favorited not in ['0', '1']:
             return Response(
-                    "Ошибка: в параметре запроса 'is_favorited' должны быть "
+                    "Ошибка: в параметре запроса 'is_favorited' должен быть "
                     "0 или 1",
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -155,9 +151,30 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = (OrganizerOwner,)
 
     def list(self, request):
-        query_dict = request.query_params  # <QueryDict: {}>
-        print(query_dict)
-        queryset = Subscription.objects.all()
+        recipes_limit = request.query_params.get('recipes_limit')  # <QueryDict: {}>
+
+        # if recipes_limit is integer ...err
+        # if recipes_limit == 0 ???
+        # if recipes_limit < 0 ...err
+
+        # проверка: указанный в запросе параметр
+        # "recipes_limit" можно преобразовать в int
+        if recipes_limit:
+            try:
+                recipes_id_int = [  # [<int>, ...]    # в данном случае можно без генератора списка, но для декомпозиции ...
+                    int(recipes_id_str) for recipes_id_str in recipes_limit  # если больше одного разряда, будет неправильно работать, т.к. str
+                ]  # добавить проверку, что число должно быть больше или равно нулю
+            except ValueError:
+                return Response(
+                    "Ошибка: в параметре запроса 'recipes_limit' должно быть указано "
+                    "натуральное число",
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            # queryset = Subscription.objects.all()[:recipes_id_int[0]]
+            # print(subscriptions)  # user's Subscriptions
+        queryset = Subscription.objects.filter(
+                user=request.user.id
+            ).select_related('author')
 
         page = self.paginate_queryset(queryset)
         if page is not None:

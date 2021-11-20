@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from rest_framework import serializers
 from django.core.files.base import ContentFile
-# from rest_framework.validators import UniqueTogetherValidator
 
 from organizer.models import Favorite, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
@@ -41,30 +40,6 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
-
-
-# class RecipeTagSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Tag
-#         fields = ('id', 'name', 'color', 'slug')
-
-#         def validate(self, data):
-#             print()
-#             print('self:', self)
-#             print('data:', data)
-#             print()
-#             return data
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(
-        slug_field='username', read_only=True,
-        default=serializers.CurrentUserDefault()
-    )
-
-    class Meta:
-        model = Subscription
-        fields = ('id', 'user', 'author')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -218,3 +193,56 @@ class RecipeSerializer(serializers.ModelSerializer):
     #         'name': object.name,
     #         'message': 'Fuck you Spielberg!'
     #     }
+
+
+class SubscriptionRecipeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    first_name = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes'
+        )
+
+    def get_email(self, object):
+        return object.author.email
+
+    def get_id(self, object):
+        return object.author.id
+
+    def get_username(self, object):
+        return object.author.username
+
+    def get_first_name(self, object):
+        return object.author.first_name
+
+    def get_last_name(self, object):
+        return object.author.last_name
+
+    def get_is_subscribed(self, object):
+        is_subscribed = Subscription.objects.filter(
+            user=object.author, author=object.user
+        ).exists()
+        return is_subscribed
+
+    def get_recipes(self, object):
+        recipes = Recipe.objects.filter(author=object.author)
+        return SubscriptionRecipeSerializer(recipes, many=True).data

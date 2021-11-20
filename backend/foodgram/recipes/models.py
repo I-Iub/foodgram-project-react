@@ -46,7 +46,7 @@ class Recipe(models.Model):
                 name='unique_recipe'
             ),
         ]
-        ordering = ['-id']  # должно быть по дате публикации
+        ordering = ['-id']  # должно быть по дате публикации #######################
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -115,7 +115,7 @@ class Measurement(models.Model):
                 name='unique_measurement'
             )
         ]
-        verbose_name = 'Компонент',
+        verbose_name = 'Компонент'
         verbose_name_plural = 'Компоненты'
 
     def __str__(self):
