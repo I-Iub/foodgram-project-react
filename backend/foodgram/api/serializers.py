@@ -182,6 +182,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
         return recipe
 
+    def update(self, instance, validated_data):  # доделать здесь _______________#
+        # print(validated_data) --> {
+        #     'ingredients': [OrderedDict([('amount', Decimal('10.000'))]), OrderedDict([('amount', Decimal('30.000'))])],
+        #     'name': 'from api. image: duck',
+        #     'image': <ContentFile: Raw content>,
+        #     'text': '907'
+        # }
+        pass
+
     def get_is_favorited(self, object):
         return object.favorites.exists()
 

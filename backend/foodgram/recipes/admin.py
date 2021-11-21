@@ -18,7 +18,14 @@ class MeasurementAdmin(admin.ModelAdmin):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'author', 'name', 'text', 'cooking_time')
+    list_display = (
+        'pk',
+        'author',
+        'name',
+        'text',
+        'cooking_time',
+        'number_of_favorites'
+    )
     search_fields = (
         'tags',
         'author',
@@ -36,6 +43,10 @@ class RecipeAdmin(admin.ModelAdmin):
         'cooking_time'
     )
     empty_value_display = '-пусто-'
+
+    @admin.display(description='Добавлений в избранное')
+    def number_of_favorites(self, object):
+        return object.favorites.count()
 
 
 class TagAdmin(admin.ModelAdmin):
