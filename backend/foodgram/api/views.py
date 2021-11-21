@@ -14,6 +14,25 @@ from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           TagSerializer, UserSerializer)
 
 
+def get_integer_list(parameter_list, parameter_name):
+    """Возвращает словарь со списком параметров, преобразованных в целые числа
+    или ообщением об ошибке, если преобразовать не удалось.
+    """
+    try:
+        integer_list = [
+            int(parameter) for parameter in parameter_list
+        ]
+        return {
+            'list': integer_list
+        }
+    except ValueError:
+        return {
+            'list': None,
+            'error_message': f"Ошибка: в параметре запроса '{parameter_name}' "
+                             f"должно быть указано натуральное число."
+        }
+
+
 class FavoriteViewSet(viewsets.ModelViewSet):  # переделать!!!
     serializer_class = FavoriteSerializer
 
@@ -54,8 +73,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 next
             else:
                 return Response(
-                    "Ошибка: в базе данных нет тегов с указанным в параметре "
-                    "запроса 'tags' слагом",
+                    f"Ошибка: в базе данных нет тегов с указанным в параметре "
+                    f"запроса слагом {tags_slug}.",
                     status=status.HTTP_400_BAD_REQUEST
                 )
         # фильтруем queryset по тегам
@@ -64,34 +83,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 tags__slug__in=tags_slug_list
             ).distinct()  # только уникальные записи
 
-        # проверка: указанный в запросе параметр
-        # "author" можно преобразовать в int
-        author_id_list = query_dict.getlist('author')  # <str>
+        author_id_list = query_dict.getlist('author')  # [<str>, ...]
         if author_id_list:
-            try:
-                author_id_int = [  # [<int>, ...]
-                    int(author_id_str) for author_id_str in author_id_list
-                ]  # добавить проверку, что число должно быть больше нуля
-            except ValueError:
-                return Response(
-                    "Ошибка: в параметре запроса 'author' должно быть указано "
-                    "натуральное число",
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        # проверяем, что указанные в параметре запроса авторы есть в БД
-        for author in author_id_list:
-            if User.objects.filter(pk=int(author)).exists():
-                next
-            else:
-                return Response(
-                    "Ошибка: в базе данных нет пользователей с id, указанным "
-                    "в параметре запроса 'author'",
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        # фильтруем по авторам
-        if author_id_list:
+            # проверка: указанный в запросе параметр
+            # "author" можно преобразовать в int
+            data_dictionary = get_integer_list(author_id_list, 'author')
+            error_message = data_dictionary.get('error_message')
+            if error_message:
+                return Response(error_message)
+            author_id_integer_list = data_dictionary.get('list')
+            # проверяем, что указанные в параметре запроса авторы есть в БД
+            for author_id in author_id_integer_list:
+                if User.objects.filter(pk=author_id).exists():
+                    next
+                else:
+                    return Response(
+                        f"Ошибка: в базе данных нет пользователя с "
+                        f"id={author_id}, указанным в параметре запроса "
+                        f"'author'.",
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            # фильтруем рецепты по авторам
             queryset = queryset.filter(
-                author__in=author_id_int
+                author__in=author_id_integer_list
             ).distinct()  # только уникальные записи
 
         is_favorited = query_dict.get('is_favorited')
@@ -151,30 +165,28 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = (OrganizerOwner,)
 
     def list(self, request):
-        recipes_limit = request.query_params.get('recipes_limit')  # <QueryDict: {}>
+        recipes_limit = request.query_params.getlist('recipes_limit')
 
-        # if recipes_limit is integer ...err
-        # if recipes_limit == 0 ???
-        # if recipes_limit < 0 ...err
-
-        # проверка: указанный в запросе параметр
-        # "recipes_limit" можно преобразовать в int
         if recipes_limit:
-            try:
-                recipes_id_int = [  # [<int>, ...]    # в данном случае можно без генератора списка, но для декомпозиции ...
-                    int(recipes_id_str) for recipes_id_str in recipes_limit  # если больше одного разряда, будет неправильно работать, т.к. str
-                ]  # добавить проверку, что число должно быть больше или равно нулю
-            except ValueError:
+            # проверка: указанный в запросе параметр
+            # "recipes_limit" можно преобразовать в int
+            data_dictionary = get_integer_list(recipes_limit, 'recipes_limit')
+            error_message = data_dictionary.get('error_message')
+            if error_message:
+                return Response(error_message)
+            # если передано несколько значений, берётся последнее:
+            recipes_limit_integer = data_dictionary.get('list')[-1]
+            # проверяем, что занчение параметра >= 0:
+            if recipes_limit_integer < 0:
                 return Response(
-                    "Ошибка: в параметре запроса 'recipes_limit' должно быть указано "
-                    "натуральное число",
+                    "Ошибка: в параметре запроса 'recipes_limit' должно быть "
+                    "указано целое неотрицательное число",
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            # queryset = Subscription.objects.all()[:recipes_id_int[0]]
-            # print(subscriptions)  # user's Subscriptions
+
         queryset = Subscription.objects.filter(
-                user=request.user.id
-            ).select_related('author')
+            user=request.user.id
+        ).select_related('author')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
