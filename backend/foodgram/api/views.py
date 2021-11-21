@@ -42,7 +42,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_fields = ('tags', 'author')
     ordering_fields = ('name',)
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         query_dict = request.query_params  # <QueryDict: {}>
         queryset = Recipe.objects.all()
 

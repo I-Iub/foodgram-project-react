@@ -244,5 +244,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return is_subscribed
 
     def get_recipes(self, object):
-        recipes = Recipe.objects.filter(author=object.author)
+        print(self.context.get('request').query_params.get('recipes_limit'))
+        request = self.context.get('request')
+        recipes_limit = int(request.query_params.get('recipes_limit'))
+        recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
         return SubscriptionRecipeSerializer(recipes, many=True).data
