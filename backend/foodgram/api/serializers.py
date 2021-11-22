@@ -146,7 +146,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         if Recipe.objects.filter(**validated_data_poped).exists():
             raise serializers.ValidationError('У вас уже есть такой рецепт')
 
-        tag_list = self.initial_data.get('tags')
+        tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
         if tag_list:
             tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
         else:
@@ -174,6 +174,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     amount=amount
                 )
             ingredients_list += [ingredient_object]
+
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
         recipe.ingredients.set(ingredients_list)
@@ -182,14 +183,81 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
         return recipe
 
-    def update(self, instance, validated_data):  # доделать здесь _______________#
+    def update(self, instance, validated_data):
         # print(validated_data) --> {
         #     'ingredients': [OrderedDict([('amount', Decimal('10.000'))]), OrderedDict([('amount', Decimal('30.000'))])],
         #     'name': 'from api. image: duck',
         #     'image': <ContentFile: Raw content>,
         #     'text': '907'
         # }
-        pass
+
+        # print(self.initial_data)
+        # {
+        #     'ingredients':
+        #         [
+        #             {'id': 1201, 'amount': 10},
+        #             {'id': 120, 'amount': 30}
+        #         ],
+        #     'tags':
+        #         [
+        #             1,
+        #             2
+        #         ],
+        #     'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==',
+        #     'name': 'from api. image: duck 907',
+        #     'text': '907',
+        #     'cooking_time': 12
+        # }
+
+        # print(instance)  # Recipe
+        # print(self.data)
+        # tag_id = [tag_id.get('id') for tag_id in self.data.get('tags')]
+        # print(*tag_id)
+        # print(self.context.get('request'))
+
+        # блок кода ниже повторяет код в create.
+        tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
+        if tag_list:
+            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+        # else:
+        #     raise serializers.ValidationError('Не указаны теги')
+
+            instance.tags.set(tags_objects)
+
+        ingredients_list = []  # блок кода ниже повторяет код в create. Сделать валидацию полученных значений?
+        initial_ingredients_list = self.initial_data.get('ingredients')
+        for ingredient_dict in initial_ingredients_list:
+            measurement_id = ingredient_dict.get('id')  # <int>
+            measurement_object = Measurement.objects.get(id=measurement_id)
+            amount = ingredient_dict.get('amount')  # <int>
+            if not Ingredient.objects.filter(
+                                             measurement=measurement_object,
+                                             amount=amount).exists():
+                ingredient_object = Ingredient.objects.create(
+                    measurement=measurement_object,
+                    amount=amount
+                )
+            else:
+                ingredient_object = Ingredient.objects.get(
+                    measurement=measurement_object,
+                    amount=amount
+                )
+            ingredients_list += [ingredient_object]
+
+        if ingredients_list:
+            instance.ingredients.set(ingredients_list)
+
+        cooking_time = self.initial_data.get('cooking_time')
+        if cooking_time:
+            instance.cooking_time = timedelta(
+                minutes=cooking_time
+            )
+
+        instance.name = validated_data.get('name', instance.name)
+        instance.image = validated_data.get('image', instance.image)
+        instance.text = validated_data.get('text', instance.text)
+
+        return instance
 
     def get_is_favorited(self, object):
         return object.favorites.exists()

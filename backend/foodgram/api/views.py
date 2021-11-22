@@ -27,7 +27,6 @@ def get_integer_list(parameter_list, parameter_name):
         }
     except ValueError:
         return {
-            'list': None,
             'error_message': f"Ошибка: в параметре запроса '{parameter_name}' "
                              f"должно быть указано натуральное число."
         }
@@ -62,12 +61,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ordering_fields = ('name',)
 
     def list(self, request, *args, **kwargs):
-        query_dict = request.query_params  # <QueryDict: {}>
+        query_dict = request.query_params  # <QueryDict: {...}>
         queryset = Recipe.objects.all()
 
+        tags_slug_list = query_dict.getlist('tags')  # ['tag_slug1', ...]
         # проверка: в базе данных есть теги с указанным
         # в параметре запроса "tags" слагом
-        tags_slug_list = query_dict.getlist('tags')  # ['tag_slug1', ...]
         for tags_slug in tags_slug_list:
             if Tag.objects.filter(slug=tags_slug).exists():
                 next
@@ -108,35 +107,31 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 author__in=author_id_integer_list
             ).distinct()  # только уникальные записи
 
-        is_favorited = query_dict.get('is_favorited')
-        # проверяем, что в is_favorited передали корректное значение:
-        if is_favorited is not None and is_favorited not in ['0', '1']:
+        is_favorited = query_dict.get('is_favorited')  # возвращает последний
+        if is_favorited is not None and is_favorited not in ('0', '1'):
             return Response(
-                    "Ошибка: в параметре запроса 'is_favorited' должен быть "
-                    "0 или 1",
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        # фильтруем избранные рецепты
+                "Ошибка: в параметре запроса 'is_favorited' должен "
+                "быть 0 или 1",
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if is_favorited == '1':
             recipe_id_list = [
                 favorite.recipe.id for favorite in Favorite.objects.filter(
                     user=request.user.id
-                ).only('recipe')
+                    ).only('recipe')
             ]
             queryset = queryset.filter(pk__in=recipe_id_list)
 
-        is_in_shopping_cart = query_dict.get('is_in_shopping_cart')
-        # проверяем, что в is_favorited передали корректное значение:
-        # print(is_in_shopping_cart)
-        if is_in_shopping_cart is not None and (
-                is_in_shopping_cart not in ['0', '1']
-                ):
+        is_in_shopping_cart = query_dict.get(  # возвращает последний
+            'is_in_shopping_cart'
+        )
+        if (is_in_shopping_cart is not None and
+                is_in_shopping_cart not in ('0', '1')):
             return Response(
-                    "Ошибка: в параметре запроса 'is_in_shopping_cart' должен "
-                    "быть 0 или 1",
-                    status=status.HTTP_400_BAD_REQUEST
+                "Ошибка: в параметре запроса 'is_in_shopping_cart' должен "
+                "быть 0 или 1",
+                status=status.HTTP_400_BAD_REQUEST
             )
-        # фильтруем рецепты из списка покупок
         if is_in_shopping_cart == '1':
             shopping_carts = ShoppingCart.objects.filter(
                 user=request.user.id
@@ -155,6 +150,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
 
