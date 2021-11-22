@@ -2,25 +2,31 @@ from django.urls import include, path
 from rest_framework import routers
 
 from .views import (FavoriteViewSet, MeasurementViewSet, RecipeViewSet,
-                    SubscriptionViewSet, TagViewSet, UserViewSet)
+                    ShoppingCartViewSet, SubscriptionViewSet, TagViewSet,
+                    UserViewSet)
 
-v1 = routers.DefaultRouter()
-v1.register(
+router = routers.DefaultRouter()
+router.register(
     r'recipes/(?P<recipe_id>\d+)/favorites/',
     FavoriteViewSet,
     basename='favorites'
 )
-v1.register('recipes', RecipeViewSet, basename='recipes')
-v1.register('tags', TagViewSet, basename='tags')
-v1.register(
+router.register(
+    r'recipes/(?P<recipe_id>\d+)',
+    ShoppingCartViewSet,
+    basename='shopping_cart'
+)
+router.register('recipes', RecipeViewSet, basename='recipes')
+router.register('tags', TagViewSet, basename='tags')
+router.register(
     'users/subscriptions', SubscriptionViewSet, basename='subscriptions'
 )
-v1.register('users', UserViewSet, basename='users')
+router.register('users', UserViewSet, basename='users')
 
-v1.register('ingredients', MeasurementViewSet, basename='ingredients')
+router.register('ingredients', MeasurementViewSet, basename='ingredients')
 
 urlpatterns = [
-    path('', include(v1.urls)),
+    path('', include(router.urls)),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
 ]
