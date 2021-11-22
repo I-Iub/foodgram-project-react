@@ -1,6 +1,8 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -210,3 +212,57 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = DjangoFilterBackend, filters.OrderingFilter
     ordering_fields = ('username', 'first_name', 'last_name')
     ordering = ('first_name',)
+
+
+class ShoppingCartViewSet(viewsets.ModelViewSet):
+    queryset = ShoppingCart.objects.all()
+
+    # @action(url_path='download_shopping_cart')
+    @action(
+        methods=['get', 'delete'],
+        url_path='shopping-cart',
+        permission_classes=[OrganizerOwner],
+        detail=False
+    )
+    def shopping_cart(self, request, recipe_id):
+        user = request.user
+        try:
+            recipe = Recipe.objects.get(pk=recipe_id)
+        except ObjectDoesNotExist:
+            return Response(
+                {
+                    'errors': f'Рецепта с id={recipe_id} не существует.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        is_shopping_cart_exists = ShoppingCart.objects.filter(
+            user=user, recipe=recipe
+        ).exists()
+        if request.method == 'GET' and is_shopping_cart_exists:
+            return Response(
+                {
+                    'errors': 'Этот рецепт уже есть в списке покупок.',
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == 'GET':
+            ShoppingCart.objects.create(user=user, recipe=recipe)
+            return Response(
+                'Рецепт добавлен в список покупок.',  # не соответствует ТЗ, должен быть json
+                status=status.HTTP_201_CREATED
+            )
+        elif request.method == 'DELETE' and not is_shopping_cart_exists:
+            return Response(
+                {
+                    'errors': 'Ошибка удаления. '
+                    'Этого рецепта нет в списке покупок.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        elif request.method == 'DELETE':
+            ShoppingCart.objects.get(user=user, recipe=recipe).delete()
+            return Response(
+                'Рецепт успешно удалён из списка покупок.',
+                status=status.HTTP_204_NO_CONTENT
+            )
