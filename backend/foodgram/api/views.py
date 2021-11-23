@@ -1,4 +1,8 @@
+import pprint
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files import File
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -12,8 +16,9 @@ from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
-                          RecipeSerializer, SubscriptionSerializer,
-                          TagSerializer, UserSerializer)
+                          RecipeSerializer, ShoppingCartSerializer,
+                          SubscriptionSerializer, TagSerializer,
+                          UserSerializer)
 
 
 def get_integer_list(parameter_list, parameter_name):
@@ -216,11 +221,50 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
+    # serializer_class = ShoppingCartSerializer
 
-    # @action(url_path='download_shopping_cart')
+    @action(
+            detail=False,
+            # permission_classes=[OrganizerOwner],
+            url_path='download_shopping_cart'
+        )
+    def download_shopping_cart(self, request):
+        user = request.user
+
+        # recipes = Recipe.objects.filter(
+        #     shopping_cart_of_recipe__user__exact=user
+        # ).prefetch_related('ingredients__measurement')
+        # querysets = [recipe.ingredients.all() for recipe in recipes]
+        # # print(querysets)
+
+        # ingredients_total = []
+        # for queryset in querysets:
+        #     ingredients = [ingredient for ingredient in queryset]
+        #     ingredients_total += ingredients
+        # print(ingredients_total)
+
+        # shopping_list = {}
+        # for ingredient in ingredients_total:
+        #     key = (f'{ingredient.measurement.name} '
+        #            f'({ingredient.measurement.measurement_unit})')
+        #     shopping_list[key] = (
+        #         shopping_list.get((key), 0) + ingredient.amount
+        #     )
+        # pprint.pprint(shopping_list)
+
+        file_name = f'{user.username}_shopping_cart.txt'
+        file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
+        with open(file_path, 'w') as file_object:  # возможно ли сделать без сохранения в файловой системе?
+            file = File(file_object)
+            file.write('Hello World2. \nFFF,erer\n098345793427')
+
+        response = HttpResponse(open(file_path), content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={file_name}'
+        return response
+
     @action(
         methods=['get', 'delete'],
-        url_path='shopping-cart',
+        url_path=r'(?P<recipe_id>\d+)/shopping_cart',
         permission_classes=[OrganizerOwner],
         detail=False
     )
@@ -235,9 +279,11 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
         is_shopping_cart_exists = ShoppingCart.objects.filter(
             user=user, recipe=recipe
         ).exists()
+
         if request.method == 'GET' and is_shopping_cart_exists:
             return Response(
                 {
@@ -251,6 +297,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 'Рецепт добавлен в список покупок.',  # не соответствует ТЗ, должен быть json
                 status=status.HTTP_201_CREATED
             )
+
         elif request.method == 'DELETE' and not is_shopping_cart_exists:
             return Response(
                 {
@@ -259,10 +306,22 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         elif request.method == 'DELETE':
             ShoppingCart.objects.get(user=user, recipe=recipe).delete()
             return Response(
                 'Рецепт успешно удалён из списка покупок.',
                 status=status.HTTP_204_NO_CONTENT
             )
+
+
+class ShoppingCartDownloadViewSet(viewsets.ModelViewSet):
+    queryset = ShoppingCart.objects.all()
+    # serializer_class = ShoppingCartSerializer
+
+    # @action(
+    #     detail=True,
+    #     permission_classes=[OrganizerOwner],
+    #     url_path='download_shopping_cart'
+    # )
+    # def download_shopping_cart():
+    #     return Response('download_shopping_cart!!!')

@@ -4,7 +4,7 @@ from datetime import timedelta
 from rest_framework import serializers
 from django.core.files.base import ContentFile
 
-from organizer.models import Favorite, Subscription
+from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from users.models import User
 
@@ -326,3 +326,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         recipes_limit = int(request.query_params.get('recipes_limit'))
         recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
         return SubscriptionRecipeSerializer(recipes, many=True).data
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('id', 'user', 'recipe')
