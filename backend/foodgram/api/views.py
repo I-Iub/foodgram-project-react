@@ -221,42 +221,41 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
-    # serializer_class = ShoppingCartSerializer
 
     @action(
             detail=False,
-            # permission_classes=[OrganizerOwner],
+            permission_classes=[OrganizerOwner],
             url_path='download_shopping_cart'
         )
     def download_shopping_cart(self, request):
         user = request.user
 
-        # recipes = Recipe.objects.filter(
-        #     shopping_cart_of_recipe__user__exact=user
-        # ).prefetch_related('ingredients__measurement')
-        # querysets = [recipe.ingredients.all() for recipe in recipes]
-        # # print(querysets)
+        recipes = Recipe.objects.filter(
+            shopping_cart_of_recipe__user__exact=user
+        ).prefetch_related('ingredients__measurement')
+        querysets = [recipe.ingredients.all() for recipe in recipes]
 
-        # ingredients_total = []
-        # for queryset in querysets:
-        #     ingredients = [ingredient for ingredient in queryset]
-        #     ingredients_total += ingredients
-        # print(ingredients_total)
+        ingredients_total = []
+        for queryset in querysets:
+            ingredients = [ingredient for ingredient in queryset]
+            ingredients_total += ingredients
 
-        # shopping_list = {}
-        # for ingredient in ingredients_total:
-        #     key = (f'{ingredient.measurement.name} '
-        #            f'({ingredient.measurement.measurement_unit})')
-        #     shopping_list[key] = (
-        #         shopping_list.get((key), 0) + ingredient.amount
-        #     )
-        # pprint.pprint(shopping_list)
+        shopping_list = {}
+        for ingredient in ingredients_total:
+            key = (f'{ingredient.measurement.name} '
+                   f'({ingredient.measurement.measurement_unit})')
+            shopping_list[key] = (
+                shopping_list.get((key), 0) + ingredient.amount
+            )
+        data = '\n'.join(
+            [f'{name}\t{amount}' for name, amount in shopping_list.items()]
+        )
 
         file_name = f'{user.username}_shopping_cart.txt'
         file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
         with open(file_path, 'w') as file_object:  # возможно ли сделать без сохранения в файловой системе?
             file = File(file_object)
-            file.write('Hello World2. \nFFF,erer\n098345793427')
+            file.write(data)  # добавить обработку ошибок ввода/вывода (exception)
 
         response = HttpResponse(open(file_path), content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={file_name}'
