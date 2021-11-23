@@ -93,6 +93,18 @@ class Base64ToImageField(serializers.ImageField):
 #     return value
 
 
+class ShortRecipeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time'
+        )
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
     # tags = TagSerializer(many=True, read_only=True, validators=[recipe_tags_validate])

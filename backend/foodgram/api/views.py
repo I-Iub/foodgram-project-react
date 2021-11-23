@@ -1,8 +1,7 @@
-import pprint
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
-from django.http import FileResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -16,7 +15,7 @@ from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
+                          RecipeSerializer, ShortRecipeSerializer,
                           SubscriptionSerializer, TagSerializer,
                           UserSerializer)
 
@@ -181,7 +180,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 return Response(error_message)
             # если передано несколько значений, берётся последнее:
             recipes_limit_integer = data_dictionary.get('list')[-1]
-            # проверяем, что занчение параметра >= 0:
+            # проверяем, что заначение параметра >= 0:
             if recipes_limit_integer < 0:
                 return Response(
                     "Ошибка: в параметре запроса 'recipes_limit' должно быть "
@@ -292,10 +291,12 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
             )
         elif request.method == 'GET':
             ShoppingCart.objects.create(user=user, recipe=recipe)
-            return Response(
-                'Рецепт добавлен в список покупок.',  # не соответствует ТЗ, должен быть json
-                status=status.HTTP_201_CREATED
-            )
+            serializer = ShortRecipeSerializer(recipe)
+            return Response(serializer.data)
+            # return Response(
+            #     'Рецепт добавлен в список покупок.',  # не соответствует ТЗ, должен быть json
+            #     status=status.HTTP_201_CREATED
+            # )
 
         elif request.method == 'DELETE' and not is_shopping_cart_exists:
             return Response(
@@ -311,16 +312,3 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 'Рецепт успешно удалён из списка покупок.',
                 status=status.HTTP_204_NO_CONTENT
             )
-
-
-class ShoppingCartDownloadViewSet(viewsets.ModelViewSet):
-    queryset = ShoppingCart.objects.all()
-    # serializer_class = ShoppingCartSerializer
-
-    # @action(
-    #     detail=True,
-    #     permission_classes=[OrganizerOwner],
-    #     url_path='download_shopping_cart'
-    # )
-    # def download_shopping_cart():
-    #     return Response('download_shopping_cart!!!')
