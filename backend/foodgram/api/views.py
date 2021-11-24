@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -15,7 +15,7 @@ from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
-                          RecipeSerializer, ShortRecipeSerializer,
+                          RecipeSerializer, ShoppingCartSerializer, ShortRecipeSerializer,
                           SubscriptionSerializer, TagSerializer,
                           UserSerializer)
 
@@ -40,11 +40,12 @@ def get_integer_list(parameter_list, parameter_name):
 
 class FavoriteViewSet(viewsets.ModelViewSet):  # переделать!!!
     serializer_class = FavoriteSerializer
+    queryset = Favorite.objects.all()
 
-    def get_queryset(self):
-        recipe_id = self.kwargs.get('recipe_id')
-        favorites = get_object_or_404(Favorite, recipe=recipe_id)
-        return favorites
+    # def get_queryset(self):
+    #     recipe_id = self.kwargs.get('recipe_id')
+    #     favorites = get_object_or_404(Favorite, recipe=recipe_id)
+    #     return favorites
 
 
 class MeasurementViewSet(viewsets.ModelViewSet):
@@ -220,45 +221,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
-
-    @action(
-            detail=False,
-            permission_classes=[OrganizerOwner],
-            url_path='download_shopping_cart'
-        )
-    def download_shopping_cart(self, request):
-        user = request.user
-
-        recipes = Recipe.objects.filter(
-            shopping_cart_of_recipe__user__exact=user
-        ).prefetch_related('ingredients__measurement')
-        querysets = [recipe.ingredients.all() for recipe in recipes]
-
-        ingredients_total = []
-        for queryset in querysets:
-            ingredients = [ingredient for ingredient in queryset]
-            ingredients_total += ingredients
-
-        shopping_list = {}
-        for ingredient in ingredients_total:
-            key = (f'{ingredient.measurement.name} '
-                   f'({ingredient.measurement.measurement_unit})')
-            shopping_list[key] = (
-                shopping_list.get((key), 0) + ingredient.amount
-            )
-        data = '\n'.join(
-            [f'{name}\t{amount}' for name, amount in shopping_list.items()]
-        )
-
-        file_name = f'{user.username}_shopping_cart.txt'
-        file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
-        with open(file_path, 'w') as file_object:  # возможно ли сделать без сохранения в файловой системе?
-            file = File(file_object)
-            file.write(data)  # добавить обработку ошибок ввода/вывода (exception)
-
-        response = HttpResponse(open(file_path), content_type='text/plain')
-        response['Content-Disposition'] = f'attachment; filename={file_name}'
-        return response
+    serializer_class = ShoppingCartSerializer
 
     @action(
         methods=['get', 'delete'],
@@ -312,3 +275,39 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 'Рецепт успешно удалён из списка покупок.',
                 status=status.HTTP_204_NO_CONTENT
             )
+
+
+@api_view(['GET'])
+def download_shopping_cart(request):
+    user = request.user
+
+    recipes = Recipe.objects.filter(
+        shopping_cart_of_recipe__user__exact=user
+    ).prefetch_related('ingredients__measurement')
+    querysets = [recipe.ingredients.all() for recipe in recipes]
+
+    ingredients_total = []
+    for queryset in querysets:
+        ingredients = [ingredient for ingredient in queryset]
+        ingredients_total += ingredients
+
+    shopping_list = {}
+    for ingredient in ingredients_total:
+        key = (f'{ingredient.measurement.name} '
+               f'({ingredient.measurement.measurement_unit})')
+        shopping_list[key] = (
+            shopping_list.get((key), 0) + ingredient.amount
+        )
+    data = '\n'.join(
+        [f'{name}\t{amount}' for name, amount in shopping_list.items()]
+    )
+
+    file_name = f'{user.username}_shopping_cart.txt'
+    file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
+    with open(file_path, 'w') as file_object:  # возможно ли сделать без сохранения в файловой системе?
+        file = File(file_object)
+        file.write(data)  # добавить обработку ошибок ввода/вывода (exception)
+
+    response = HttpResponse(open(file_path), content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename={file_name}'
+    return response
