@@ -47,6 +47,55 @@ class FavoriteViewSet(viewsets.ModelViewSet):  # переделать!!!
     #     favorites = get_object_or_404(Favorite, recipe=recipe_id)
     #     return favorites
 
+    @action(
+        methods=['get', 'delete'],
+        url_path=r'(?P<recipe_id>\d+)/favorites',
+        permission_classes=[OrganizerOwner],
+        detail=False
+    )
+    def favorites(self, request, recipe_id):
+        user = request.user
+        try:  # код ниже повторяет shopping_cart. Нужно декомпозировать и отDRYить______________________
+            recipe = Recipe.objects.get(pk=recipe_id)
+        except ObjectDoesNotExist:
+            return Response(
+                {
+                    'errors': f'Рецепта с id={recipe_id} не существует.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        is_favorites_exists = Favorite.objects.filter(
+            user=user, recipe=recipe
+        ).exists()
+
+        if request.method == 'GET' and is_favorites_exists:
+            return Response(
+                {
+                    'errors': 'Этот рецепт уже есть в избранном.',
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == 'GET':
+            Favorite.objects.create(user=user, recipe=recipe)
+            serializer = ShortRecipeSerializer(recipe)
+            return Response(serializer.data)
+
+        elif request.method == 'DELETE' and not is_favorites_exists:
+            return Response(
+                {
+                    'errors': 'Ошибка удаления. '
+                    'Этого рецепта нет в избранном.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == 'DELETE':
+            Favorite.objects.get(user=user, recipe=recipe).delete()
+            return Response(
+                'Рецепт успешно удалён из избранного.',
+                status=status.HTTP_204_NO_CONTENT
+            )
+
 
 class MeasurementViewSet(viewsets.ModelViewSet):
     queryset = Measurement.objects.all()

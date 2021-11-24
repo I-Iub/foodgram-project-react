@@ -11,12 +11,9 @@ router = routers.DefaultRouter()
 #     ShoppingCartDownloadViewSet,
 #     basename='download_shopping_cart'
 # )
-router.register(
-    r'recipes/(?P<recipe_id>\d+)/favorites',
-    FavoriteViewSet,
-    basename='favorites'
-)
+
 router.register('recipes', RecipeViewSet, basename='recipes')
+router.register('recipes', FavoriteViewSet, basename='favorites')
 router.register('recipes', ShoppingCartViewSet, basename='shopping_cart')
 router.register('tags', TagViewSet, basename='tags')
 router.register(
