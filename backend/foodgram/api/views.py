@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+# from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view
@@ -15,9 +15,9 @@ from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
 
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
-                          RecipeSerializer, ShoppingCartSerializer, ShortRecipeSerializer,
-                          SubscriptionSerializer, TagSerializer,
-                          UserSerializer)
+                          RecipeSerializer, ShoppingCartSerializer,
+                          ShortRecipeSerializer, SubscriptionSerializer,
+                          TagSerializer, UserSerializer)
 
 
 def get_integer_list(parameter_list, parameter_name):
@@ -218,6 +218,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     permission_classes = (OrganizerOwner,)
 
+    # @action(
+    #     methods=['get', 'delete'],
+    #     url_path=r'(?P<recipe_id>\d+)/subscribe',
+    #     permission_classes=[OrganizerOwner],
+    #     detail=False
+    # )
+
     def list(self, request):
         recipes_limit = request.query_params.getlist('recipes_limit')
 
@@ -249,6 +256,84 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(
+        methods=['get', 'delete'],
+        url_path=r'(?P<author_id>\d+)/subscribe',
+        permission_classes=[OrganizerOwner],
+        detail=False
+    )
+    def subscribe(self, request, author_id):
+        user = request.user
+
+        recipes_limit = request.query_params.get('recipes_limit')
+        print()
+        print('recipes_limit:', recipes_limit)
+        print()
+        recipes_limit_integer = get_integer_list(recipes_limit, 'recipes_limit')
+        error_message = recipes_limit_integer.get('error_message')
+        if error_message:
+            return Response(error_message)
+
+        # author_id_integer = get_integer_list(author_id, 'author_id')
+        # print(author_id_integer)
+        # error_message = author_id_integer.get('error_message')
+        # print(error_message)
+        # if error_message:
+        #     return Response(error_message)
+
+        if user.id == int(author_id):
+            return Response(
+                {
+                    'errors': 'Нельзя подписаться на самого себя.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:  # код ниже повторяет shopping_cart. Нужно декомпозировать и отDRYить______________________
+            author = User.objects.get(pk=author_id)
+        except ObjectDoesNotExist:
+            return Response(
+                {
+                    'errors': f'Пользователя с id={author_id} не существует.'
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        is_subscription_exists = Subscription.objects.filter(
+            user=user, author=author
+        ).exists()
+
+        if request.method == 'GET' and is_subscription_exists:
+            return Response(
+                {
+                    'errors': 'Вы уже подписаны на этого автора.',
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == 'GET':
+            subscription = Subscription.objects.create(
+                user=user, author=author
+            )
+            serializer = SubscriptionSerializer(subscription, context={'request': request})
+            return Response(serializer.data)
+
+        elif request.method == 'DELETE' and not is_subscription_exists:
+            return Response(
+                {
+                    'errors': 'Ошибка удаления. '
+                    'Нет подписки на этого автора.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == 'DELETE':
+            Subscription.objects.get(user=user, author=author).delete()
+            return Response(
+                'Подписка успешно удалёна.',
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        # return Response(f'1111111111111111111 {recipes_limit}')
 
 
 class TagViewSet(viewsets.ModelViewSet):

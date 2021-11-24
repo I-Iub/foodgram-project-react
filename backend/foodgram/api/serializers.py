@@ -298,6 +298,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     last_name = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField(read_only=True)
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription
@@ -308,7 +309,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'is_subscribed',
-            'recipes'
+            'recipes',
+            'recipes_count'
         )
 
     def get_email(self, object):
@@ -333,11 +335,16 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return is_subscribed
 
     def get_recipes(self, object):
-        print(self.context.get('request').query_params.get('recipes_limit'))
+        # print(self.context.get('request').query_params.get('recipes_limit'))
+        # print(self.context['request'])
         request = self.context.get('request')
         recipes_limit = int(request.query_params.get('recipes_limit'))
         recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
         return SubscriptionRecipeSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, object):
+        recipes_count = Recipe.objects.filter(author=object.author).count()
+        return recipes_count
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
