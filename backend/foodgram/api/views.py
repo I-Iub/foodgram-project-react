@@ -347,7 +347,7 @@ class TagViewSet(viewsets.ModelViewSet):
     ordering_fields = ('name',)
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [UserPermissions]
@@ -355,8 +355,8 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ('username', 'first_name', 'last_name')
     ordering = ('first_name',)
 
-    def create(self, request):
-        return Response({'message': 'created!'})
+    # def create(self, request):
+    #     return Response({'message': 'created!'})
 
     @action(
         methods=['get'],

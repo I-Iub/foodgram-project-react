@@ -3,6 +3,8 @@ from datetime import timedelta
 
 from rest_framework import serializers
 from django.core.files.base import ContentFile
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
 
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
@@ -44,6 +46,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
@@ -53,8 +56,22 @@ class UserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
+            'password',
             'is_subscribed'
         )
+
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except serializers.ValidationError as error:
+            raise serializers.ValidationError(str(error))
+        return value
+
+    def create(self, validated_data):
+        validated_data['password'] = make_password(
+            validated_data.get('password')
+        )
+        return super(UserSerializer, self).create(validated_data)
 
     def get_is_subscribed(self, object):
         user = self.context.get('request').user
