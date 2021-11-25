@@ -57,7 +57,10 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, object):
-        return object.subscriptions.exists()
+        user = self.context.get('request').user
+        return Subscription.objects.filter(
+            user=user.id, author=object
+        ).exists()
 
 
 class Base64ToImageField(serializers.ImageField):
@@ -330,7 +333,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, object):
         is_subscribed = Subscription.objects.filter(
-            user=object.author, author=object.user
+            # user=object.author, author=object.user
+            user=object.user, author=object.author
         ).exists()
         return is_subscribed
 

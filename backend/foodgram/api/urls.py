@@ -16,8 +16,8 @@ router.register('recipes', RecipeViewSet, basename='recipes')
 router.register('recipes', FavoriteViewSet, basename='favorites')
 router.register('recipes', ShoppingCartViewSet, basename='shopping_cart')
 router.register('tags', TagViewSet, basename='tags')
-router.register('users', SubscriptionViewSet, basename='subscriptions')
 router.register('users', UserViewSet, basename='users')
+router.register('users', SubscriptionViewSet, basename='subscriptions')
 
 router.register('ingredients', MeasurementViewSet, basename='ingredients')
 

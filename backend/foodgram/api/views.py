@@ -7,11 +7,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Measurement, Recipe, Tag
 from users.models import User
-from users.permissions import OrganizerOwner, RecipeAuthorOrReadOnly
+from users.permissions import (OrganizerOwner, RecipeAuthorOrReadOnly,
+                               UserPermissions)
 
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
@@ -348,9 +350,32 @@ class TagViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [UserPermissions]
     filter_backends = DjangoFilterBackend, filters.OrderingFilter
     ordering_fields = ('username', 'first_name', 'last_name')
     ordering = ('first_name',)
+
+    def create(self, request):
+        return Response({'message': 'created!'})
+
+    @action(
+        methods=['get'],
+        url_path='me',
+        permission_classes=[UserPermissions],
+        detail=False  # Почему не работает с detail=True ???======================
+    )
+    def get_me(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {
+                        "detail": "Учетные данные не были предоставлены."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_data = User.objects.get(pk=user.id)
+        serializer = UserSerializer(user_data, context={'request': request})
+        return Response(serializer.data)
 
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
@@ -412,6 +437,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
+# permission_classes([OrganizerOwner])  # ????????????????????????????????????????
 def download_shopping_cart(request):
     user = request.user
 
