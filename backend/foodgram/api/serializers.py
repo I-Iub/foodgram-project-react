@@ -80,6 +80,24 @@ class UserSerializer(serializers.ModelSerializer):
         ).exists()
 
 
+class UserPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    current_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):  # повторяет то же что и в UserSerializer validate_password
+        try:
+            validate_password(value)
+        except serializers.ValidationError as error:
+            raise serializers.ValidationError(str(error))
+        return value
+
+    def validate_current_password(self, value):
+        user = User.objects.get(pk=self.context.user.id)
+        if not user.check_password(value):
+            raise serializers.ValidationError()
+        return value
+
+
 class Base64ToImageField(serializers.ImageField):
     def to_internal_value(self, base64_string):
         # encoded_string = base64_string.encode('utf-8')

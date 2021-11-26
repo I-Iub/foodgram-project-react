@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.http import HttpResponse
@@ -7,7 +8,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
 
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Measurement, Recipe, Tag
@@ -19,7 +19,8 @@ from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           RecipeSerializer, ShoppingCartSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
-                          TagSerializer, UserSerializer)
+                          TagSerializer, UserSerializer,
+                          UserPasswordSerializer)
 
 
 def get_integer_list(parameter_list, parameter_name):
@@ -471,3 +472,25 @@ def download_shopping_cart(request):
     response = HttpResponse(open(file_path), content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename={file_name}'
     return response
+
+
+@api_view(['POST'])
+def set_password(request):
+    # print(request.user)
+    # print(request.user.password)
+    # valid_password = password_validator(new_password)
+    serializer = UserPasswordSerializer(
+        data=request.data, context=request
+    )
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # print(request.user.password)
+
+    User.objects.filter(pk=request.user.id).update(password=make_password(request.data.get('new_password')))
+
+    # print(user.password)
+    # # user.set_password(request.data.get('new_password'))
+    # user.password = make_password(request.data.get('new_password'))
+    # print(user.password)
+
+    return Response('Пароль успешно изменён.')  # ??????????????????
