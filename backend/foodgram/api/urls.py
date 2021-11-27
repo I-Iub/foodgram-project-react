@@ -27,6 +27,6 @@ urlpatterns = [
     path('users/set_password/', set_password),
     # path('users/<int:user_id>/subscribe/', SubscriptionViewSet.as_view({'get': 'subscribe'})),
     path('', include(router.urls)),
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.jwt')),
+    # path('auth/', include('djoser.urls')),
+    # path('auth/', include('djoser.urls.jwt')),
 ]

@@ -1,10 +1,10 @@
 from base64 import b64decode
 from datetime import timedelta
 
-from rest_framework import serializers
 from django.core.files.base import ContentFile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
 
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag

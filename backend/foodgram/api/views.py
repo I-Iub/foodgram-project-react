@@ -476,21 +476,12 @@ def download_shopping_cart(request):
 
 @api_view(['POST'])
 def set_password(request):
-    # print(request.user)
-    # print(request.user.password)
-    # valid_password = password_validator(new_password)
     serializer = UserPasswordSerializer(
         data=request.data, context=request
     )
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    # print(request.user.password)
-
-    User.objects.filter(pk=request.user.id).update(password=make_password(request.data.get('new_password')))
-
-    # print(user.password)
-    # # user.set_password(request.data.get('new_password'))
-    # user.password = make_password(request.data.get('new_password'))
-    # print(user.password)
-
-    return Response('Пароль успешно изменён.')  # ??????????????????
+    User.objects.filter(pk=request.user.id).update(
+        password=make_password(request.data.get('new_password'))
+    )
+    return Response('Пароль успешно изменён.')  # ????????????????????????????????????
