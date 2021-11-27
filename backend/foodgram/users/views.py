@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from .permissions import UserPermissions
 from .serializers import EmailPasswordPasswordSerializer
+from .models import User
 
 
 @api_view(['POST'])
@@ -23,4 +24,15 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
-    return Response('logouttttttttttt')
+    # print()
+    # print(request.user)
+    # print(id(request.user))
+    # user = User.objects.get(pk=request.user.id)
+    # print(id(user))
+    # print()
+    if request.user.is_authenticated:
+        # print('token', Token.objects.get(user=request.user))
+        # print('token', Token.objects.get(user=user))
+        Token.objects.get(user=request.user).delete()
+
+    return Response()

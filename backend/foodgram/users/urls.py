@@ -6,5 +6,5 @@ urlpatterns = [
     # path('auth/', include('djoser.urls')),
     # path('auth/', include('djoser.urls.jwt')),
     path('auth/token/login/', login),
-    # path('auth/token/logout/', logout)
+    path('auth/token/logout/', logout)
 ]
