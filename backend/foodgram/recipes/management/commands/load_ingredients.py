@@ -13,14 +13,17 @@ class Command(BaseCommand):
     help = 'Read .csv'
 
     def handle(self, *args, **kwargs):
-        project_dir = os.path.dirname(os.path.dirname(settings.BASE_DIR))
+        project_dir = settings.BASE_DIR
         with open(
             f'{project_dir}/data/ingredients.csv',
             'r', encoding='utf-8'
         ) as csv_file:
-            reader = csv.DictReader(csv_file, fieldnames=['name', 'measure'])
+            reader = csv.DictReader(
+                csv_file, fieldnames=['name', 'measurement_unit']
+            )
             objects = (Measurement(
-                name=line['name'], measure=line['measure']) for line in reader
+                name=line['name'],
+                measurement_unit=line['measurement_unit']) for line in reader
             )
             while True:
                 batch = list(islice(objects, BATCH_SIZE))
