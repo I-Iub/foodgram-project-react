@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -52,7 +53,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):  # переделать!!!
 
     @action(
         methods=['get', 'delete'],
-        url_path=r'(?P<recipe_id>\d+)/favorites',
+        url_path=r'(?P<recipe_id>\d+)/favorite',
         permission_classes=[OrganizerOwner],
         detail=False
     )
@@ -110,14 +111,28 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     search_fields = ('^name',)
     ordering_fields = ('name',)
 
+    def list(self, request, *args, **kwargs):
+        search_parameter = request.query_params.getlist('name')[-1]
+        print('search_parameter', search_parameter)
+        queryset = Measurement.objects.filter(
+            name__istartswith=search_parameter
+        )
+        print('queryset', queryset)
+        serializer = MeasurementSerializer(
+            queryset, many=True
+        )
+        print(serializer.data)
+        return Response(serializer.data)
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (RecipeAuthorOrReadOnly,)
-    filter_backends = DjangoFilterBackend, filters.OrderingFilter
+    filter_backends = DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter
     filterset_fields = ('tags', 'author')
     ordering_fields = ('name',)
+    search_fields = ('ingredients',)
 
     def list(self, request, *args, **kwargs):
         query_dict = request.query_params  # <QueryDict: {...}>
@@ -167,13 +182,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ).distinct()  # только уникальные записи
 
         is_favorited = query_dict.get('is_favorited')  # возвращает последний
-        if is_favorited is not None and is_favorited not in ('0', '1'):
+        if is_favorited is not None and is_favorited not in ('true', 'false'):
             return Response(
-                "Ошибка: в параметре запроса 'is_favorited' должен "
-                "быть 0 или 1",
+                "Ошибка: в параметре запроса 'is_favorited' должно "
+                "быть false или true",
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if is_favorited == '1':
+        if is_favorited == 'true':
             recipe_id_list = [
                 favorite.recipe.id for favorite in Favorite.objects.filter(
                     user=request.user.id
@@ -185,13 +200,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'is_in_shopping_cart'
         )
         if (is_in_shopping_cart is not None and
-                is_in_shopping_cart not in ('0', '1')):
+                is_in_shopping_cart not in ('true', 'false')):
             return Response(
-                "Ошибка: в параметре запроса 'is_in_shopping_cart' должен "
-                "быть 0 или 1",
+                "Ошибка: в параметре запроса 'is_in_shopping_cart' должно "
+                "быть true или false",
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if is_in_shopping_cart == '1':
+        if is_in_shopping_cart == 'true':
             shopping_carts = ShoppingCart.objects.filter(
                 user=request.user.id
             ).select_related('recipe')  # .only('recipe') ???
