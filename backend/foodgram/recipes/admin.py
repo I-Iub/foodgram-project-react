@@ -35,12 +35,9 @@ class RecipeAdmin(admin.ModelAdmin):
         'cooking_time'
     )
     list_filter = (
-        'tags',
         'author',
-        'ingredients',
         'name',
-        'text',
-        'cooking_time'
+        'tags'
     )
     empty_value_display = '-пусто-'
 
