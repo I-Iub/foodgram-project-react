@@ -6,11 +6,6 @@ from .views import (FavoriteViewSet, MeasurementViewSet, RecipeViewSet,
                     UserViewSet, download_shopping_cart, set_password)
 
 router = routers.DefaultRouter()
-# router.register(
-#     'recipes',
-#     ShoppingCartDownloadViewSet,
-#     basename='download_shopping_cart'
-# )
 
 router.register('recipes', RecipeViewSet, basename='recipes')
 router.register('recipes', FavoriteViewSet, basename='favorite')
@@ -25,8 +20,5 @@ urlpatterns = [
     path('recipes/download_shopping_cart/', download_shopping_cart),
     path('users/subscriptions/', SubscriptionViewSet.as_view({'get': 'list'})),
     path('users/set_password/', set_password),
-    # path('users/<int:user_id>/subscribe/', SubscriptionViewSet.as_view({'get': 'subscribe'})),
     path('', include(router.urls)),
-    # path('auth/', include('djoser.urls')),
-    # path('auth/', include('djoser.urls.jwt')),
 ]

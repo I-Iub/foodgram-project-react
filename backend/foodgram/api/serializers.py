@@ -92,7 +92,7 @@ class UserPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True)
     current_password = serializers.CharField(write_only=True)
 
-    def validate_new_password(self, value):  # повторяет то же что и в UserSerializer validate_password
+    def validate_new_password(self, value):
         try:
             validate_password(value)
         except serializers.ValidationError as error:
@@ -108,11 +108,10 @@ class UserPasswordSerializer(serializers.Serializer):
 
 class Base64ToImageField(serializers.ImageField):
     def to_internal_value(self, base64_string):
-        # encoded_string = base64_string.encode('utf-8')
         if not base64_string:
-            return super().to_internal_value(None)  # ??? Проверить как будет работать!!!!!!!!!!!!!!!
+            return super().to_internal_value(None)
         if base64_string.startswith('data:image'):
-            description, image_string = base64_string.split(';base64,')  # format ~= data:image/X,
+            description, image_string = base64_string.split(';base64,')
             extension = description.split('/')[-1]  # разрешение файла
             data = ContentFile(
                 b64decode(image_string), name='temp.' + extension
@@ -121,22 +120,6 @@ class Base64ToImageField(serializers.ImageField):
             image_string = base64_string
             data = ContentFile(b64decode(image_string), name='temp.jpeg')
         return super().to_internal_value(data)
-        # return data
-
-    # def to_internal_value(self, base64_string):
-    #     # base64_string = base64_string.split(',', maxsplit=1)[1]
-    #     encoded_string = base64_string.encode('utf-8')
-    #     return decodebytes(encoded_string)
-
-    # def to_representation():
-    #     pass
-
-
-# def recipe_tags_validate(self, value):
-#     print(self.context['request'].method)
-
-#     # raise serializers.ValidationError('В базе данных отсутствует тег с указанным слагом')
-#     return value
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
@@ -152,13 +135,10 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)  # required=False ????????????????????????????????????????????
-    # tags = TagSerializer(many=True, read_only=True, validators=[recipe_tags_validate])
+    author = UserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True)
-    # image = Base64ToImageField(read_only=True)
     image = Base64ToImageField()
-    # cooking_time = serializers.IntegerField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -176,19 +156,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         )
-        # validators = [  # не нужен в случае с ModelSerializer, т.к. прописан в модели
-        #     UniqueTogetherValidator(
-        #         queryset=Recipe.objects.all(),
-        #         fields=('author', 'name', 'text', 'cooking_time'),
-        #         message='UniqueTogetherValidator: У вас уже есть такой рецепт'
-        #     )
-        # ]
-
-    # def validate_tags(self, value):
-    #     print('VALUE', value)
-    #     # if not value:
-    #     #     raise serializers.ValidationError('Должен быть указан тэг(и)')
-    #     return value
 
     def create(self, validated_data):
         validated_data.pop('ingredients')  # ингредиенты обрабатываются ниже
@@ -196,15 +163,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         validated_data_poped = validated_data.copy()
         # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
         validated_data_poped.pop('image')
-
-        # print('validated_data_poped', validated_data_poped)
-        # print(Recipe.objects.filter(**validated_data_poped).exists())
-
         # Проверка наличия в базе Рецепта, похожего на сохраняемый
         if Recipe.objects.filter(**validated_data_poped).exists():
             raise serializers.ValidationError('У вас уже есть такой рецепт')
 
-        tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
+        tag_list = self.initial_data.get('tags')
         if tag_list:
             tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
         else:
@@ -212,12 +175,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                 'tags': ['Обязательное поле.']
             })
 
-        # if 'ingredients' not in self.initial_data:
-        #     raise serializers.ValidationError({
-        #         'ingredients': ['Не указаны ингредиенты']
-        #     })
         ingredients_list = []
-        # initial_ingredients_list: [{'id': <int>, 'amount': <int>},]
         initial_ingredients_list = self.initial_data.get('ingredients')
         for ingredient_dict in initial_ingredients_list:
             measurement_id = ingredient_dict.get('id')  # <int>
@@ -227,11 +185,17 @@ class RecipeSerializer(serializers.ModelSerializer):
                 amount = float(amount)
             except ValueError:
                 raise serializers.ValidationError({
-                    'amount': ['Количество ингредиента укажите числом с точкой.']
+                    'amount': [
+                        'Количество ингредиента укажите числом с точкой в '
+                        'качестве разделителя десятичной части.'
+                    ]
                 })
             except TypeError:
                 raise serializers.ValidationError({
-                    'amount': 'Количество ингредиента укажите числом с точкой.'
+                    'amount': [
+                        'Количество ингредиента укажите числом с точкой в '
+                        'качестве разделителя десятичной части.'
+                    ]
                 })
 
             if not Ingredient.objects.filter(
@@ -251,41 +215,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
         recipe.ingredients.set(ingredients_list)
-        # recipe.cooking_time = self.initial_data.get('cooking_time')
+
         return recipe
 
     def update(self, instance, validated_data):
-        # print(validated_data) --> {
-        #     'ingredients': [OrderedDict([('amount', Decimal('10.000'))]), OrderedDict([('amount', Decimal('30.000'))])],
-        #     'name': 'from api. image: duck',
-        #     'image': <ContentFile: Raw content>,
-        #     'text': '907'
-        # }
-
-        # print(self.initial_data)
-        # {
-        #     'ingredients':
-        #         [
-        #             {'id': 1201, 'amount': 10},
-        #             {'id': 120, 'amount': 30}
-        #         ],
-        #     'tags':
-        #         [
-        #             1,
-        #             2
-        #         ],
-        #     'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==',
-        #     'name': 'from api. image: duck 907',
-        #     'text': '907',
-        #     'cooking_time': 12
-        # }
-
-        # print(instance)  # Recipe
-        # print(self.data)
-        # tag_id = [tag_id.get('id') for tag_id in self.data.get('tags')]
-        # print(*tag_id)
-        # print(self.context.get('request'))
-
         # блок кода ниже повторяет код в create.
         tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
         if tag_list:
@@ -306,11 +239,17 @@ class RecipeSerializer(serializers.ModelSerializer):
                 amount = float(amount)
             except ValueError:
                 raise serializers.ValidationError({
-                    'amount': ['Количество ингредиента укажите числом с точкой.']
+                    'amount': [
+                        'Количество ингредиента укажите числом с точкой в '
+                        'качестве разделителя десятичной части.'
+                    ]
                 })
             except TypeError:
                 raise serializers.ValidationError({
-                    'amount': 'Количество ингредиента укажите числом с точкой.'
+                    'amount': [
+                        'Количество ингредиента укажите числом с точкой в '
+                        'качестве разделителя десятичной части.'
+                    ]
                 })
 
             if not Ingredient.objects.filter(
@@ -347,13 +286,9 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_in_shopping_cart(self, object):
         user = self.context.get('request').user
-        return ShoppingCart.objects.filter(user=user.id, recipe=object.id).exists()
-
-    # def to_representation(self, object):
-    #     return {
-    #         'name': object.name,
-    #         'message': 'Fuck you Spielberg!'
-    #     }
+        return ShoppingCart.objects.filter(
+            user=user.id, recipe=object.id
+        ).exists()
 
 
 class SubscriptionRecipeSerializer(serializers.ModelSerializer):
@@ -402,14 +337,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, object):
         is_subscribed = Subscription.objects.filter(
-            # user=object.author, author=object.user
             user=object.user, author=object.author
         ).exists()
         return is_subscribed
 
     def get_recipes(self, object):
-        # print(self.context.get('request').query_params.get('recipes_limit'))
-        # print(self.context['request'])
         request = self.context.get('request')
         if not request.query_params.get('recipes_limit'):
             recipes = Recipe.objects.filter(author=object.author)

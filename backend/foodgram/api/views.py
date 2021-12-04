@@ -3,11 +3,9 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.http import HttpResponse
-# from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-# from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -42,14 +40,9 @@ def get_integer_list(parameter_list, parameter_name):
         }
 
 
-class FavoriteViewSet(viewsets.ModelViewSet):  # переделать!!!
+class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     queryset = Favorite.objects.all()
-
-    # def get_queryset(self):
-    #     recipe_id = self.kwargs.get('recipe_id')
-    #     favorites = get_object_or_404(Favorite, recipe=recipe_id)
-    #     return favorites
 
     @action(
         methods=['get', 'delete'],
@@ -113,15 +106,12 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         search_parameter = request.query_params.getlist('name')[-1]
-        # print('search_parameter', search_parameter)
         queryset = Measurement.objects.filter(
             name__istartswith=search_parameter
         )
-        # print('queryset', queryset)
         serializer = MeasurementSerializer(
             queryset, many=True
         )
-        # print(serializer.data)
         return Response(serializer.data)
 
 
@@ -211,7 +201,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if is_in_shopping_cart == 'true':
             shopping_carts = ShoppingCart.objects.filter(
                 user=request.user.id
-            ).select_related('recipe')  # .only('recipe') ???
+            ).select_related('recipe')
             recipes_list = [cart.recipe for cart in shopping_carts]
             queryset = [
                 recipe for recipe in queryset if recipe in recipes_list
@@ -237,13 +227,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionSerializer
     pagination_class = CustomPagination
     permission_classes = (OrganizerOwner,)
-
-    # @action(
-    #     methods=['get', 'delete'],
-    #     url_path=r'(?P<recipe_id>\d+)/subscribe',
-    #     permission_classes=[OrganizerOwner],
-    #     detail=False
-    # )
 
     def list(self, request):
         recipes_limit = request.query_params.getlist('recipes_limit')
@@ -293,13 +276,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         error_message = recipes_limit_integer.get('error_message')
         if error_message:
             return Response(error_message)
-
-        # author_id_integer = get_integer_list(author_id, 'author_id')
-        # print(author_id_integer)
-        # error_message = author_id_integer.get('error_message')
-        # print(error_message)
-        # if error_message:
-        #     return Response(error_message)
 
         if user.id == int(author_id):
             return Response(
@@ -354,8 +330,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
 
-        # return Response(f'1111111111111111111 {recipes_limit}')
-
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
@@ -374,14 +348,11 @@ class UserViewSet(viewsets.ModelViewSet):
     ordering_fields = ('username', 'first_name', 'last_name')
     ordering = ('first_name',)
 
-    # def create(self, request):
-    #     return Response({'message': 'created!'})
-
     @action(
         methods=['get'],
         url_path='me',
         permission_classes=[UserPermissions],
-        detail=False  # Почему не работает с detail=True ???======================
+        detail=False
     )
     def get_me(self, request):
         user = request.user
@@ -434,10 +405,6 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
             ShoppingCart.objects.create(user=user, recipe=recipe)
             serializer = ShortRecipeSerializer(recipe)
             return Response(serializer.data)
-            # return Response(
-            #     'Рецепт добавлен в список покупок.',  # не соответствует ТЗ, должен быть json
-            #     status=status.HTTP_201_CREATED
-            # )
 
         elif request.method == 'DELETE' and not is_shopping_cart_exists:
             return Response(
@@ -456,7 +423,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([OrganizerOwner])  # ????????????????????????????????????????
+@permission_classes([OrganizerOwner])
 def download_shopping_cart(request):
     user = request.user
 
@@ -486,7 +453,7 @@ def download_shopping_cart(request):
 
     file_name = f'{user.username}_shopping_cart.txt'
     file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
-    with open(file_path, 'w') as file_object:  # возможно ли сделать без сохранения в файловой системе?
+    with open(file_path, 'w') as file_object:
         file = File(file_object)
         file.write(data)  # добавить обработку ошибок ввода/вывода (exception)
 
@@ -505,4 +472,4 @@ def set_password(request):
     User.objects.filter(pk=request.user.id).update(
         password=make_password(request.data.get('new_password'))
     )
-    return Response('Пароль успешно изменён.')  # ????????????????????????????????????
+    return Response('Пароль успешно изменён.')
