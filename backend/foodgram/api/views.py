@@ -112,15 +112,15 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         search_parameter = request.query_params.getlist('name')[-1]
-        print('search_parameter', search_parameter)
+        # print('search_parameter', search_parameter)
         queryset = Measurement.objects.filter(
             name__istartswith=search_parameter
         )
-        print('queryset', queryset)
+        # print('queryset', queryset)
         serializer = MeasurementSerializer(
             queryset, many=True
         )
-        print(serializer.data)
+        # print(serializer.data)
         return Response(serializer.data)
 
 
@@ -283,10 +283,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, author_id):
         user = request.user
 
-        recipes_limit = request.query_params.get('recipes_limit')
-        print()
-        print('recipes_limit:', recipes_limit)
-        print()
+        recipes_limit = request.query_params.getlist('recipes_limit')
         recipes_limit_integer = get_integer_list(recipes_limit, 'recipes_limit')
         error_message = recipes_limit_integer.get('error_message')
         if error_message:

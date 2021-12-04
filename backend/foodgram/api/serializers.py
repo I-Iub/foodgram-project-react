@@ -1,4 +1,5 @@
 from base64 import b64decode
+from decimal import Decimal
 
 from django.core.files.base import ContentFile
 from django.contrib.auth.hashers import make_password
@@ -207,17 +208,32 @@ class RecipeSerializer(serializers.ModelSerializer):
         if tag_list:
             tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
         else:
-            raise serializers.ValidationError('Не указаны теги')
+            raise serializers.ValidationError({
+                'tags': ['Обязательное поле.']
+            })
 
+        # if 'ingredients' not in self.initial_data:
+        #     raise serializers.ValidationError({
+        #         'ingredients': ['Не указаны ингредиенты']
+        #     })
         ingredients_list = []
-        if 'ingredients' not in self.initial_data:
-            raise serializers.ValidationError('Не указаны ингредиенты')
         # initial_ingredients_list: [{'id': <int>, 'amount': <int>},]
         initial_ingredients_list = self.initial_data.get('ingredients')
         for ingredient_dict in initial_ingredients_list:
             measurement_id = ingredient_dict.get('id')  # <int>
             measurement_object = Measurement.objects.get(id=measurement_id)
-            amount = ingredient_dict.get('amount')  # <int>
+            amount = ingredient_dict.get('amount')
+            try:
+                amount = float(amount)
+            except ValueError:
+                raise serializers.ValidationError({
+                    'amount': ['Количество ингредиента укажите числом с точкой.']
+                })
+            except TypeError:
+                raise serializers.ValidationError({
+                    'amount': 'Количество ингредиента укажите числом с точкой.'
+                })
+
             if not Ingredient.objects.filter(
                                              measurement=measurement_object,
                                              amount=amount).exists():
@@ -274,17 +290,29 @@ class RecipeSerializer(serializers.ModelSerializer):
         tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
         if tag_list:
             tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
-        # else:
-        #     raise serializers.ValidationError('Не указаны теги')
-
             instance.tags.set(tags_objects)
+        else:
+            raise serializers.ValidationError({
+                'tags': ['Обязательное поле.']
+            })
 
         ingredients_list = []  # блок кода ниже повторяет код в create. Сделать валидацию полученных значений?
         initial_ingredients_list = self.initial_data.get('ingredients')
         for ingredient_dict in initial_ingredients_list:
             measurement_id = ingredient_dict.get('id')  # <int>
             measurement_object = Measurement.objects.get(id=measurement_id)
-            amount = ingredient_dict.get('amount')  # <int>
+            amount = ingredient_dict.get('amount')
+            try:
+                amount = float(amount)
+            except ValueError:
+                raise serializers.ValidationError({
+                    'amount': ['Количество ингредиента укажите числом с точкой.']
+                })
+            except TypeError:
+                raise serializers.ValidationError({
+                    'amount': 'Количество ингредиента укажите числом с точкой.'
+                })
+
             if not Ingredient.objects.filter(
                                              measurement=measurement_object,
                                              amount=amount).exists():
@@ -304,7 +332,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         cooking_time = self.initial_data.get('cooking_time')
         if cooking_time:
-            instance.cooking_time = minutes=cooking_time
+            instance.cooking_time = cooking_time
 
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)
@@ -313,7 +341,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
     def get_is_favorited(self, object):
-        return object.favorites.exists()
+        user = self.context.get('request').user
+        return Favorite.objects.filter(user=user.id, recipe=object.id).exists()
 
     def get_is_in_shopping_cart(self, object):
         return object.shopping_cart_of_recipe.exists()
@@ -380,6 +409,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         # print(self.context.get('request').query_params.get('recipes_limit'))
         # print(self.context['request'])
         request = self.context.get('request')
+        if not request.query_params.get('recipes_limit'):
+            recipes = Recipe.objects.filter(author=object.author)
+            return SubscriptionRecipeSerializer(recipes, many=True).data
         recipes_limit = int(request.query_params.get('recipes_limit'))
         recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
         return SubscriptionRecipeSerializer(recipes, many=True).data
