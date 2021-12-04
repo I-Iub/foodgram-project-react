@@ -1,5 +1,4 @@
 from base64 import b64decode
-from datetime import timedelta
 
 from django.core.files.base import ContentFile
 from django.contrib.auth.hashers import make_password
@@ -26,6 +25,8 @@ class MeasurementSerializer(serializers.ModelSerializer):
 class IngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
 
     class Meta:
         model = Ingredient
@@ -36,6 +37,12 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     def get_name(self, object):
         return object.measurement.name
+
+    def get_amount(self, object):
+        return object.amount.normalize()
+
+    def get_id(self, object):
+        return object.measurement.id
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -150,7 +157,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientSerializer(many=True)
     # image = Base64ToImageField(read_only=True)
     image = Base64ToImageField()
-    cooking_time = serializers.DurationField(read_only=True)
+    # cooking_time = serializers.IntegerField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -228,9 +235,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
         recipe.ingredients.set(ingredients_list)
-        recipe.cooking_time = timedelta(
-            minutes=self.initial_data.get('cooking_time')
-        )
+        # recipe.cooking_time = self.initial_data.get('cooking_time')
         return recipe
 
     def update(self, instance, validated_data):
@@ -299,9 +304,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         cooking_time = self.initial_data.get('cooking_time')
         if cooking_time:
-            instance.cooking_time = timedelta(
-                minutes=cooking_time
-            )
+            instance.cooking_time = minutes=cooking_time
 
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)

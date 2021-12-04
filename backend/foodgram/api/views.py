@@ -6,8 +6,7 @@ from django.http import HttpResponse
 # from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
-from rest_framework.decorators import action, api_view
-from rest_framework.filters import SearchFilter
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -453,7 +452,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-# permission_classes([OrganizerOwner])  # ????????????????????????????????????????
+@permission_classes([OrganizerOwner])  # ????????????????????????????????????????
 def download_shopping_cart(request):
     user = request.user
 
@@ -475,7 +474,10 @@ def download_shopping_cart(request):
             shopping_list.get((key), 0) + ingredient.amount
         )
     data = '\n'.join(
-        [f'{name}\t{amount}' for name, amount in shopping_list.items()]
+        [
+            f'{name}\t{amount}'
+            for name, amount in shopping_list.items()
+        ]
     )
 
     file_name = f'{user.username}_shopping_cart.txt'

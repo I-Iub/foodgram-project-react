@@ -6,6 +6,4 @@ urlpatterns = [
     # path('users/', include('users.urls', namespace='users')),
     path('api/', include('api.urls')),
     path('api/', include('users.urls')),
-    path('', include('organizer.urls')),
-    path('', include('recipes.urls')),
 ]

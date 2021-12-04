@@ -1,9 +1,7 @@
-from datetime import timedelta
-
 from django.db import models
 from users.models import User
 
-RECIPE_MIN_COOKING_TIME = timedelta(minutes=1)
+RECIPE_MIN_COOKING_TIME = 1
 INGREDIENT_MIN_AMOUNT = 0
 
 
@@ -28,7 +26,7 @@ class Recipe(models.Model):
     name = models.CharField(max_length=200, verbose_name='Название блюда')
     image = models.ImageField(upload_to='recipes/')
     text = models.TextField(verbose_name='Рецепт')
-    cooking_time = models.DurationField(
+    cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления, мин.',
         default=RECIPE_MIN_COOKING_TIME
     )
@@ -37,7 +35,7 @@ class Recipe(models.Model):
         constraints = [
             models.CheckConstraint(
                 check=models.Q(cooking_time__gte=RECIPE_MIN_COOKING_TIME),
-                name=f'cooking_time__gte_{str(RECIPE_MIN_COOKING_TIME)}_minute'
+                name=f'cooking_time__gte_{RECIPE_MIN_COOKING_TIME}_minute'
             ),
             models.UniqueConstraint(
                 fields=[
