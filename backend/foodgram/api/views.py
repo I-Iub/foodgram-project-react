@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+# from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from organizer.models import Favorite, ShoppingCart, Subscription
@@ -127,8 +128,10 @@ class MeasurementViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    pagination_class = CustomPagination
     permission_classes = (RecipeAuthorOrReadOnly,)
-    filter_backends = DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter,
+                       filters.SearchFilter)
     filterset_fields = ('tags', 'author')
     ordering_fields = ('name',)
     search_fields = ('ingredients',)
@@ -284,7 +287,9 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         user = request.user
 
         recipes_limit = request.query_params.getlist('recipes_limit')
-        recipes_limit_integer = get_integer_list(recipes_limit, 'recipes_limit')
+        recipes_limit_integer = get_integer_list(
+            recipes_limit, 'recipes_limit'
+        )
         error_message = recipes_limit_integer.get('error_message')
         if error_message:
             return Response(error_message)
@@ -329,7 +334,9 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             subscription = Subscription.objects.create(
                 user=user, author=author
             )
-            serializer = SubscriptionSerializer(subscription, context={'request': request})
+            serializer = SubscriptionSerializer(
+                subscription, context={'request': request}
+            )
             return Response(serializer.data)
 
         elif request.method == 'DELETE' and not is_subscription_exists:
@@ -468,7 +475,7 @@ def download_shopping_cart(request):
         key = (f'{ingredient.measurement.name} '
                f'({ingredient.measurement.measurement_unit})')
         shopping_list[key] = (
-            shopping_list.get((key), 0) + ingredient.amount
+            shopping_list.get((key), 0) + ingredient.amount.normalize()
         )
     data = '\n'.join(
         [

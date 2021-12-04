@@ -338,6 +338,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         instance.image = validated_data.get('image', instance.image)
         instance.text = validated_data.get('text', instance.text)
 
+        instance.save()
         return instance
 
     def get_is_favorited(self, object):
@@ -345,7 +346,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         return Favorite.objects.filter(user=user.id, recipe=object.id).exists()
 
     def get_is_in_shopping_cart(self, object):
-        return object.shopping_cart_of_recipe.exists()
+        user = self.context.get('request').user
+        return ShoppingCart.objects.filter(user=user.id, recipe=object.id).exists()
 
     # def to_representation(self, object):
     #     return {
