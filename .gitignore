@@ -133,6 +133,4 @@ dmypy.json
 
 .vscode/
 
-# Удалить перед сдачей:
 api_requests.http
-base64_strings
