@@ -1,14 +1,70 @@
 from base64 import b64decode
-from decimal import Decimal
 
-from django.core.files.base import ContentFile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
-from rest_framework import serializers
-
+from django.core.files.base import ContentFile
+from django.core.exceptions import ObjectDoesNotExist
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
+from rest_framework import serializers
 from users.models import User
+
+
+def get_tags_objects(tag_list):
+    try:
+        tags_objects = [
+            Tag.objects.get(id=tag_id) for tag_id in tag_list
+        ]
+    except ObjectDoesNotExist:
+        raise serializers.ValidationError({
+            'tags': ['Тега не существует.']
+        })
+    return tags_objects
+
+
+def get_ingredients_objects(initial_ingredients_list):
+    ingredients_objects = []
+    for ingredient_dict in initial_ingredients_list:
+        measurement_id = ingredient_dict.get('id')
+        try:
+            measurement_object = Measurement.objects.get(id=measurement_id)
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError({
+                'ingredients': [
+                    'Ингредиента не существует.'
+                ]
+            })
+        amount = ingredient_dict.get('amount')
+        try:
+            amount = float(amount)
+        except ValueError:
+            raise serializers.ValidationError({
+                'amount': [
+                    'Количество ингредиента укажите числом с точкой в '
+                    'качестве разделителя десятичной части.'
+                ]
+            })
+        except TypeError:
+            raise serializers.ValidationError({
+                'amount': [
+                    'Количество ингредиента укажите числом с точкой в '
+                    'качестве разделителя десятичной части.'
+                ]
+            })
+        if not Ingredient.objects.filter(
+                                            measurement=measurement_object,
+                                            amount=amount).exists():
+            ingredient_object = Ingredient.objects.create(
+                measurement=measurement_object,
+                amount=amount
+            )
+        else:
+            ingredient_object = Ingredient.objects.get(
+                measurement=measurement_object,
+                amount=amount
+            )
+        ingredients_objects += [ingredient_object]
+    return ingredients_objects
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -169,105 +225,36 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         tag_list = self.initial_data.get('tags')
         if tag_list:
-            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+            tags_objects = get_tags_objects(tag_list)
         else:
             raise serializers.ValidationError({
                 'tags': ['Обязательное поле.']
             })
 
-        ingredients_list = []
         initial_ingredients_list = self.initial_data.get('ingredients')
-        for ingredient_dict in initial_ingredients_list:
-            measurement_id = ingredient_dict.get('id')  # <int>
-            measurement_object = Measurement.objects.get(id=measurement_id)
-            amount = ingredient_dict.get('amount')
-            try:
-                amount = float(amount)
-            except ValueError:
-                raise serializers.ValidationError({
-                    'amount': [
-                        'Количество ингредиента укажите числом с точкой в '
-                        'качестве разделителя десятичной части.'
-                    ]
-                })
-            except TypeError:
-                raise serializers.ValidationError({
-                    'amount': [
-                        'Количество ингредиента укажите числом с точкой в '
-                        'качестве разделителя десятичной части.'
-                    ]
-                })
-
-            if not Ingredient.objects.filter(
-                                             measurement=measurement_object,
-                                             amount=amount).exists():
-                ingredient_object = Ingredient.objects.create(
-                    measurement=measurement_object,
-                    amount=amount
-                )
-            else:
-                ingredient_object = Ingredient.objects.get(
-                    measurement=measurement_object,
-                    amount=amount
-                )
-            ingredients_list += [ingredient_object]
+        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
 
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
-        recipe.ingredients.set(ingredients_list)
+        recipe.ingredients.set(ingredients_objects)
 
         return recipe
 
     def update(self, instance, validated_data):
-        # блок кода ниже повторяет код в create.
-        tag_list = self.initial_data.get('tags')  # здесь и везде добавить валидацию initial_data
+        tag_list = self.initial_data.get('tags')
         if tag_list:
-            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+            tags_objects = get_tags_objects(tag_list)
             instance.tags.set(tags_objects)
         else:
             raise serializers.ValidationError({
                 'tags': ['Обязательное поле.']
             })
 
-        ingredients_list = []  # блок кода ниже повторяет код в create. Сделать валидацию полученных значений?
         initial_ingredients_list = self.initial_data.get('ingredients')
-        for ingredient_dict in initial_ingredients_list:
-            measurement_id = ingredient_dict.get('id')  # <int>
-            measurement_object = Measurement.objects.get(id=measurement_id)
-            amount = ingredient_dict.get('amount')
-            try:
-                amount = float(amount)
-            except ValueError:
-                raise serializers.ValidationError({
-                    'amount': [
-                        'Количество ингредиента укажите числом с точкой в '
-                        'качестве разделителя десятичной части.'
-                    ]
-                })
-            except TypeError:
-                raise serializers.ValidationError({
-                    'amount': [
-                        'Количество ингредиента укажите числом с точкой в '
-                        'качестве разделителя десятичной части.'
-                    ]
-                })
+        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
 
-            if not Ingredient.objects.filter(
-                                             measurement=measurement_object,
-                                             amount=amount).exists():
-                ingredient_object = Ingredient.objects.create(
-                    measurement=measurement_object,
-                    amount=amount
-                )
-            else:
-                ingredient_object = Ingredient.objects.get(
-                    measurement=measurement_object,
-                    amount=amount
-                )
-            ingredients_list += [ingredient_object]
-
-        if ingredients_list:
-            instance.ingredients.set(ingredients_list)
+        if ingredients_objects:
+            instance.ingredients.set(ingredients_objects)
 
         cooking_time = self.initial_data.get('cooking_time')
         if cooking_time:

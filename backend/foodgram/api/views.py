@@ -4,12 +4,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from organizer.models import Favorite, ShoppingCart, Subscription
+from recipes.models import Measurement, Recipe, Tag
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-
-from organizer.models import Favorite, ShoppingCart, Subscription
-from recipes.models import Measurement, Recipe, Tag
 from users.models import User
 from users.permissions import (OrganizerOwner, RecipeAuthorOrReadOnly,
                                UserPermissions)
@@ -18,8 +17,8 @@ from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           RecipeSerializer, ShoppingCartSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
-                          TagSerializer, UserSerializer,
-                          UserPasswordSerializer)
+                          TagSerializer, UserPasswordSerializer,
+                          UserSerializer)
 
 
 def get_integer_list(parameter_list, parameter_name):
