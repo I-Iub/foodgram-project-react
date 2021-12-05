@@ -1,5 +1,4 @@
 import csv
-import os
 from itertools import islice
 
 from django.conf import settings

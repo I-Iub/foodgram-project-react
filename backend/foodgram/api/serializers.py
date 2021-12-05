@@ -12,14 +12,13 @@ from users.models import User
 
 def get_tags_objects(tag_list):
     try:
-        tags_objects = [
+        return [
             Tag.objects.get(id=tag_id) for tag_id in tag_list
         ]
     except ObjectDoesNotExist:
         raise serializers.ValidationError({
             'tags': ['Тега не существует.']
         })
-    return tags_objects
 
 
 def get_ingredients_objects(initial_ingredients_list):
@@ -52,8 +51,8 @@ def get_ingredients_objects(initial_ingredients_list):
                 ]
             })
         if not Ingredient.objects.filter(
-                                            measurement=measurement_object,
-                                            amount=amount).exists():
+                measurement=measurement_object,
+                amount=amount).exists():
             ingredient_object = Ingredient.objects.create(
                 measurement=measurement_object,
                 amount=amount
@@ -323,10 +322,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return object.author.last_name
 
     def get_is_subscribed(self, object):
-        is_subscribed = Subscription.objects.filter(
+        return Subscription.objects.filter(
             user=object.user, author=object.author
         ).exists()
-        return is_subscribed
 
     def get_recipes(self, object):
         request = self.context.get('request')
@@ -338,8 +336,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return SubscriptionRecipeSerializer(recipes, many=True).data
 
     def get_recipes_count(self, object):
-        recipes_count = Recipe.objects.filter(author=object.author).count()
-        return recipes_count
+        return Recipe.objects.filter(author=object.author).count()
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

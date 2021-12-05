@@ -47,7 +47,7 @@ class Subscription(models.Model):
             models.CheckConstraint(
                 check=~models.Q(author=models.F('user')),
                 name='user_is_not_author'
-                )
+            )
         ]
         ordering = ['user']
         verbose_name = 'Подписка'

@@ -99,6 +99,13 @@ class FavoriteViewSet(viewsets.ModelViewSet):
                 'Рецепт успешно удалён из избранного.',
                 status=status.HTTP_204_NO_CONTENT
             )
+        else:
+            return Response(
+                {
+                    'errors': 'Неизвестный или неразрешенный запрос.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class MeasurementViewSet(viewsets.ModelViewSet):
@@ -191,15 +198,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe_id_list = [
                 favorite.recipe.id for favorite in Favorite.objects.filter(
                     user=request.user.id
-                    ).only('recipe')
+                ).only('recipe')
             ]
             queryset = queryset.filter(pk__in=recipe_id_list)
 
         is_in_shopping_cart = query_dict.get(  # возвращает последний
             'is_in_shopping_cart'
         )
-        if (is_in_shopping_cart is not None and
-                is_in_shopping_cart not in ('true', 'false')):
+        if (is_in_shopping_cart is not None
+                and is_in_shopping_cart not in ('true', 'false')):
             return Response(
                 "Ошибка: в параметре запроса 'is_in_shopping_cart' должно "
                 "быть true или false",
@@ -332,6 +339,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 'Подписка успешно удалёна.',
                 status=status.HTTP_204_NO_CONTENT
             )
+        else:
+            return Response(
+                {
+                    'errors': 'Неизвестный или неразрешенный запрос.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -362,7 +376,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Response(
                 {
-                        "detail": "Учетные данные не были предоставлены."
+                    "detail": "Учетные данные не были предоставлены."
                 },
                 status=status.HTTP_401_UNAUTHORIZED
             )
@@ -422,6 +436,13 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
             return Response(
                 'Рецепт успешно удалён из списка покупок.',
                 status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {
+                    'errors': 'Неизвестный или неразрешенный запрос.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 
