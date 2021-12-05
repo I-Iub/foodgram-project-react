@@ -2,6 +2,7 @@
 
 !api
 !data
+!Dockerfile
 !foodgram
 !organizer
 !recipes
