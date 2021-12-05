@@ -7,12 +7,14 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_cart',
+        related_name='user_shopping_cart',
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    recipe = models.ForeignKey(
         Recipe,
-        related_name='shopping_cart'
+        on_delete=models.PROTECT,
+        related_name='shopping_cart_of_recipe',
+        verbose_name='Рецепт'
     )
 
     class Meta:
@@ -20,20 +22,20 @@ class ShoppingCart(models.Model):
         verbose_name_plural = 'Списки покупок'
 
     def __str__(self):
-        return (f'Список покупок пользователя {self.user.first_name}'
-                f'{self.user.last_name}')
+        return (f'Список покупок. Запись {self.id}; '
+                f'Пользователь {self.user.username}')
 
 
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='users'
+        related_name='subscriptions'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='authors'
+        related_name='subscriptions_on_author'
     )
 
     class Meta:
@@ -47,11 +49,12 @@ class Subscription(models.Model):
                 name='user_is_not_author'
                 )
         ]
-        verbose_name = 'Подписка',
+        ordering = ['user']
+        verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return (f'Подписки пользователя {self.user.first_name}'
+        return (f'Подписка id={self.id} пользователя {self.user.first_name}'
                 f'{self.user.last_name}')
 
 
@@ -62,7 +65,8 @@ class Favorite(models.Model):
     )
     recipe = models.ForeignKey(
         Recipe,
-        on_delete=models.PROTECT
+        on_delete=models.PROTECT,
+        related_name='favorites'
     )
 
     class Meta:
@@ -70,5 +74,4 @@ class Favorite(models.Model):
         verbose_name_plural = 'Избранное'
 
     def __str__(self):
-        return (f'Избранное пользователя {self.user.first_name}'
-                f'{self.user.last_name}')
+        return (f'Избранное {self.user.username}: рецепт id={self.recipe.id}')

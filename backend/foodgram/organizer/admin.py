@@ -11,7 +11,7 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 
 class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user')
+    list_display = ('pk', 'user', 'recipe')
     search_fields = ('user',)
     list_filter = ('user',)
     empty_value_display = '-пусто-'

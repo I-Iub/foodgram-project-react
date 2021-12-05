@@ -1,12 +1,15 @@
 from django.db import models
 from users.models import User
 
+RECIPE_MIN_COOKING_TIME = 1
+INGREDIENT_MIN_AMOUNT = 0
+
 
 class Recipe(models.Model):
     tags = models.ManyToManyField(
         'Tag',
         related_name='tag_recipes',
-        verbose_name='Рецепт'
+        verbose_name='Тэг'
     )
     author = models.ForeignKey(
         User,
@@ -21,29 +24,49 @@ class Recipe(models.Model):
         verbose_name='Ингредиенты'
     )
     name = models.CharField(max_length=200, verbose_name='Название блюда')
-    image = models.ImageField()
+    image = models.ImageField(upload_to='recipes/')
     text = models.TextField(verbose_name='Рецепт')
-    cooking_time = models.DurationField(  # сделать валидацию (>= 1)
-        verbose_name='Время приготовления, мин.'
+    cooking_time = models.PositiveIntegerField(
+        verbose_name='Время приготовления, мин.',
+        default=RECIPE_MIN_COOKING_TIME
     )
 
     class Meta:
-        def __str__(self):
-            return self.name[:20]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(cooking_time__gte=RECIPE_MIN_COOKING_TIME),
+                name=f'cooking_time__gte_{RECIPE_MIN_COOKING_TIME}_minute'
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    'author', 'name', 'text', 'cooking_time'
+                ],
+                name='unique_recipe'
+            ),
+        ]
+        ordering = ['-id']
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
+
+    def __str__(self):
+        return self.name[:50]
 
 
 class Tag(models.Model):
     name = models.CharField(unique=True, max_length=200)
-    color = models.ImageField(unique=True, max_length=7)
+    color = models.CharField(unique=True, max_length=7)
     slug = models.SlugField(unique=True, max_length=200)
 
     class Meta:
-        def __str__(self):
-            return self.name
+        verbose_name = 'Тэг'
+        verbose_name_plural = 'Тэги'
+
+    def __str__(self):
+        return self.name
 
 
 class Ingredient(models.Model):
-    measurement_unit = models.ForeignKey(
+    measurement = models.ForeignKey(
         'Measurement',
         on_delete=models.PROTECT,
         related_name='ingredients',
@@ -56,16 +79,21 @@ class Ingredient(models.Model):
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=['measurement_unit', 'amount'],
-            name='unique_ingredient_amount'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['measurement', 'amount'],
+                name='unique_ingredient_amount'
+            ),
+            models.CheckConstraint(
+                check=models.Q(amount__gt=INGREDIENT_MIN_AMOUNT),
+                name=f'amount__gt_{INGREDIENT_MIN_AMOUNT}'
             )
         ]
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
-        def __str__(self):
-            return self.measurement_unit
+    def __str__(self):
+        return f'{str(self.measurement)}, {self.amount}'
 
 
 class Measurement(models.Model):
@@ -73,16 +101,20 @@ class Measurement(models.Model):
         max_length=200,
         verbose_name='Компонент'
     )
-    measure = models.CharField(
+    measurement_unit = models.CharField(
         max_length=100,
         verbose_name='Единица измерения'
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=['name', 'measure'],
-            name='unique_measurement'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='unique_measurement'
             )
         ]
-        verbose_name = 'Компонент',
+        verbose_name = 'Компонент'
         verbose_name_plural = 'Компоненты'
+
+    def __str__(self):
+        return self.name[:200]
