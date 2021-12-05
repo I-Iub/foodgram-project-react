@@ -17,9 +17,8 @@ services:
     build:
       context: ../backend/foodgram
       dockerfile: Dockerfile
-#    image: zealousblack/...
+#    image: zealousblack/foodgram:latest
     restart: always
-# попробовать разные варианты размещения папки со статикой
     volumes:
       - static_value:/code/static_foodgram/
       - media_value:/code/media/
