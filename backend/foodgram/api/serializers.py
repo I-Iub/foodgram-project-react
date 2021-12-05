@@ -2,8 +2,8 @@ from base64 import b64decode
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
-from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from rest_framework import serializers

@@ -39,6 +39,17 @@ def get_integer_list(parameter_list, parameter_name):
         }
 
 
+def get_object_if_exists(object_class, object_id):
+    try:
+        object = object_class.objects.get(pk=object_id)
+        return {
+            'object': object}
+    except ObjectDoesNotExist:
+        return {
+            'error_message': f'Объекта с id={object_id} не существует.'
+        }
+
+
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     queryset = Favorite.objects.all()
@@ -51,15 +62,12 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     )
     def favorites(self, request, recipe_id):
         user = request.user
-        try:  # код ниже повторяет shopping_cart. Нужно декомпозировать и отDRYить______________________
-            recipe = Recipe.objects.get(pk=recipe_id)
-        except ObjectDoesNotExist:
-            return Response(
-                {
-                    'errors': f'Рецепта с id={recipe_id} не существует.'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
+        recipe = get_object_if_exists(Recipe, recipe_id)
+        error_message = recipe.get('error_message')
+        if error_message:
+            return Response(error_message, status=status.HTTP_404_NOT_FOUND)
+        recipe = recipe.get('object')
 
         is_favorites_exists = Favorite.objects.filter(
             user=user, recipe=recipe
@@ -284,15 +292,11 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:  # код ниже повторяет shopping_cart. Нужно декомпозировать и отDRYить______________________
-            author = User.objects.get(pk=author_id)
-        except ObjectDoesNotExist:
-            return Response(
-                {
-                    'errors': f'Пользователя с id={author_id} не существует.'
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
+        author = get_object_if_exists(User, author_id)
+        error_message = author.get('error_message')
+        if error_message:
+            return Response(error_message, status=status.HTTP_404_NOT_FOUND)
+        author = author.get('object')
 
         is_subscription_exists = Subscription.objects.filter(
             user=user, author=author
