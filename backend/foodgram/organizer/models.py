@@ -7,13 +7,13 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='user_shopping_cart',
+        related_name='shopping_cart',
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.PROTECT,
-        related_name='shopping_cart_of_recipe',
+        related_name='shopping_cart',
         verbose_name='Рецепт'
     )
 
@@ -30,12 +30,14 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscriptions'
+        related_name='subscriptions',
+        verbose_name='Пользователь'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscriptions_on_author'
+        related_name='subscriptions_on_author',
+        verbose_name='Автор'
     )
 
     class Meta:
@@ -61,12 +63,14 @@ class Subscription(models.Model):
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.PROTECT,
-        related_name='favorites'
+        related_name='favorites',
+        verbose_name='Рецепт'
     )
 
     class Meta:

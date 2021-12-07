@@ -8,14 +8,14 @@ INGREDIENT_MIN_AMOUNT = 0
 class Recipe(models.Model):
     tags = models.ManyToManyField(
         'Tag',
-        related_name='tag_recipes',
+        related_name='recipes',
         verbose_name='Тэг'
     )
     author = models.ForeignKey(
         User,
         null=True,
         on_delete=models.SET_NULL,
-        related_name='user_recipes',
+        related_name='recipes',
         verbose_name='Автор рецепта'
     )
     ingredients = models.ManyToManyField(
@@ -24,7 +24,7 @@ class Recipe(models.Model):
         verbose_name='Ингредиенты'
     )
     name = models.CharField(max_length=200, verbose_name='Название блюда')
-    image = models.ImageField(upload_to='recipes/')
+    image = models.ImageField(upload_to='recipes/', verbose_name='Изображение')
     text = models.TextField(verbose_name='Рецепт')
     cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления, мин.',
@@ -53,9 +53,13 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(unique=True, max_length=200)
-    color = models.CharField(unique=True, max_length=7)
-    slug = models.SlugField(unique=True, max_length=200)
+    name = models.CharField(
+        unique=True,
+        max_length=200,
+        verbose_name='Наименование'
+    )
+    color = models.CharField(unique=True, max_length=7, verbose_name='Цвет')
+    slug = models.SlugField(unique=True, max_length=200, verbose_name='Слаг')
 
     class Meta:
         verbose_name = 'Тэг'
@@ -72,7 +76,7 @@ class Ingredient(models.Model):
         related_name='ingredients',
         verbose_name='Ингредиент'
     )
-    amount = models.DecimalField(  # сделать валидацию > 0
+    amount = models.DecimalField(
         max_digits=9,
         decimal_places=3,
         verbose_name='Количество'

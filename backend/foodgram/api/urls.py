@@ -17,8 +17,16 @@ router.register('users', SubscriptionViewSet, basename='subscriptions')
 router.register('ingredients', MeasurementViewSet, basename='ingredients')
 
 urlpatterns = [
-    path('recipes/download_shopping_cart/', download_shopping_cart),
-    path('users/subscriptions/', SubscriptionViewSet.as_view({'get': 'list'})),
-    path('users/set_password/', set_password),
+    path(
+        'recipes/download_shopping_cart/',
+        download_shopping_cart,
+        name='download_shopping_cart'
+    ),
+    path(
+        'users/subscriptions/',
+        SubscriptionViewSet.as_view({'get': 'list'}),
+        name='subscriptions'
+    ),
+    path('users/set_password/', set_password, name='set_password'),
     path('', include(router.urls)),
 ]

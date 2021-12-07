@@ -1,9 +1,10 @@
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.permissions import IsAuthenticated
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Measurement, Recipe, Tag
 from rest_framework import filters, status, viewsets
@@ -19,35 +20,7 @@ from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
                           TagSerializer, UserPasswordSerializer,
                           UserSerializer)
-
-
-def get_integer_list(parameter_list, parameter_name):
-    """Возвращает словарь со списком параметров, преобразованных в целые числа
-    или ообщением об ошибке, если преобразовать не удалось.
-    """
-    try:
-        integer_list = [
-            int(parameter) for parameter in parameter_list
-        ]
-        return {
-            'list': integer_list
-        }
-    except ValueError:
-        return {
-            'error_message': f"Ошибка: в параметре запроса '{parameter_name}' "
-                             f"должно быть указано натуральное число."
-        }
-
-
-def get_object_if_exists(object_class, object_id):
-    try:
-        object = object_class.objects.get(pk=object_id)
-        return {
-            'object': object}
-    except ObjectDoesNotExist:
-        return {
-            'error_message': f'Объекта с id={object_id} не существует.'
-        }
+from .utils import get_integer_list, get_object_if_exists
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
@@ -368,19 +341,12 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         methods=['get'],
         url_path='me',
-        permission_classes=[UserPermissions],
+        permission_classes=[IsAuthenticated],
         detail=False
     )
     def get_me(self, request):
         user = request.user
-        if not user.is_authenticated:
-            return Response(
-                {
-                    "detail": "Учетные данные не были предоставлены."
-                },
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        user_data = User.objects.get(pk=user.id)
+        user_data = get_object_or_404(User, pk=user.id)
         serializer = UserSerializer(user_data, context={'request': request})
         return Response(serializer.data)
 
@@ -399,7 +365,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         user = request.user
         try:
             recipe = Recipe.objects.get(pk=recipe_id)
-        except ObjectDoesNotExist:
+        except Recipe.DoesNotExist:
             return Response(
                 {
                     'errors': f'Рецепта с id={recipe_id} не существует.'
@@ -452,7 +418,7 @@ def download_shopping_cart(request):
     user = request.user
 
     recipes = Recipe.objects.filter(
-        shopping_cart_of_recipe__user__exact=user
+        shopping_cart__user__exact=user
     ).prefetch_related('ingredients__measurement')
     querysets = [recipe.ingredients.all() for recipe in recipes]
 
@@ -487,6 +453,7 @@ def download_shopping_cart(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def set_password(request):
     serializer = UserPasswordSerializer(
         data=request.data, context=request

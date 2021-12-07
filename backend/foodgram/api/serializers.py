@@ -1,69 +1,13 @@
-from base64 import b64decode
-
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from rest_framework import serializers
 from users.models import User
 
-
-def get_tags_objects(tag_list):
-    try:
-        return [
-            Tag.objects.get(id=tag_id) for tag_id in tag_list
-        ]
-    except ObjectDoesNotExist:
-        raise serializers.ValidationError({
-            'tags': ['Тега не существует.']
-        })
-
-
-def get_ingredients_objects(initial_ingredients_list):
-    ingredients_objects = []
-    for ingredient_dict in initial_ingredients_list:
-        measurement_id = ingredient_dict.get('id')
-        try:
-            measurement_object = Measurement.objects.get(id=measurement_id)
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError({
-                'ingredients': [
-                    'Ингредиента не существует.'
-                ]
-            })
-        amount = ingredient_dict.get('amount')
-        try:
-            amount = float(amount)
-        except ValueError:
-            raise serializers.ValidationError({
-                'amount': [
-                    'Количество ингредиента укажите числом с точкой в '
-                    'качестве разделителя десятичной части.'
-                ]
-            })
-        except TypeError:
-            raise serializers.ValidationError({
-                'amount': [
-                    'Количество ингредиента укажите числом с точкой в '
-                    'качестве разделителя десятичной части.'
-                ]
-            })
-        if not Ingredient.objects.filter(
-                measurement=measurement_object,
-                amount=amount).exists():
-            ingredient_object = Ingredient.objects.create(
-                measurement=measurement_object,
-                amount=amount
-            )
-        else:
-            ingredient_object = Ingredient.objects.get(
-                measurement=measurement_object,
-                amount=amount
-            )
-        ingredients_objects += [ingredient_object]
-    return ingredients_objects
+from .fields import Base64ToImageField
+from .utils import get_ingredients_objects, get_tags_objects
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -79,26 +23,19 @@ class MeasurementSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    measurement_unit = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
+    measurement_unit = serializers.CharField(
+        source='measurement.measurement_unit'
+    )
+    name = serializers.CharField(source='measurement.name')
     amount = serializers.SerializerMethodField()
-    id = serializers.SerializerMethodField()
+    id = serializers.IntegerField(source='measurement.id')
 
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
-    def get_measurement_unit(self, object):
-        return object.measurement.measurement_unit
-
-    def get_name(self, object):
-        return object.measurement.name
-
     def get_amount(self, object):
         return object.amount.normalize()
-
-    def get_id(self, object):
-        return object.measurement.id
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -134,7 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data['password'] = make_password(
             validated_data.get('password')
         )
-        return super(UserSerializer, self).create(validated_data)
+        return super().create(validated_data)
 
     def get_is_subscribed(self, object):
         user = self.context.get('request').user
@@ -155,26 +92,12 @@ class UserPasswordSerializer(serializers.Serializer):
         return value
 
     def validate_current_password(self, value):
-        user = User.objects.get(pk=self.context.user.id)
+        user = get_object_or_404(User, pk=self.context.user.id)  # посмотреть где ещё применить в проекте get_object_or_404
         if not user.check_password(value):
-            raise serializers.ValidationError()
+            raise serializers.ValidationError({
+                'current_password': 'Текущий пароль неверный.'
+            })
         return value
-
-
-class Base64ToImageField(serializers.ImageField):
-    def to_internal_value(self, base64_string):
-        if not base64_string:
-            return super().to_internal_value(None)
-        if base64_string.startswith('data:image'):
-            description, image_string = base64_string.split(';base64,')
-            extension = description.split('/')[-1]  # разрешение файла
-            data = ContentFile(
-                b64decode(image_string), name='temp.' + extension
-            )
-        else:
-            image_string = base64_string
-            data = ContentFile(b64decode(image_string), name='temp.jpeg')
-        return super().to_internal_value(data)
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
@@ -284,11 +207,11 @@ class SubscriptionRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    email = serializers.SerializerMethodField()
-    id = serializers.SerializerMethodField()
-    username = serializers.SerializerMethodField()
-    first_name = serializers.SerializerMethodField()
-    last_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='author.email')
+    id = serializers.IntegerField(source='author.id')
+    username = serializers.CharField(source='author.username')
+    first_name = serializers.CharField(source='author.first_name')
+    last_name = serializers.CharField(source='author.last_name')
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.SerializerMethodField()
@@ -305,21 +228,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'recipes',
             'recipes_count'
         )
-
-    def get_email(self, object):
-        return object.author.email
-
-    def get_id(self, object):
-        return object.author.id
-
-    def get_username(self, object):
-        return object.author.username
-
-    def get_first_name(self, object):
-        return object.author.first_name
-
-    def get_last_name(self, object):
-        return object.author.last_name
 
     def get_is_subscribed(self, object):
         return Subscription.objects.filter(
