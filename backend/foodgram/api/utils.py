@@ -11,8 +11,12 @@ def get_tags_objects(tag_list):
             Tag.objects.get(id=tag_id) for tag_id in tag_list
         ]
     except Tag.DoesNotExist:
-        raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
+        raise serializers.ValidationError({
             'tags': ['Тега не существует.']
+        })
+    except ValueError:
+        raise serializers.ValidationError({
+            'tags': ['Тег должен передаваться натуральным числом.']
         })
 
 

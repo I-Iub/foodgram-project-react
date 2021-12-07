@@ -114,7 +114,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
+    tags = TagSerializer(read_only=True, many=True)
     ingredients = IngredientSerializer(many=True)
     image = Base64ToImageField()
     is_favorited = serializers.SerializerMethodField()
@@ -135,6 +135,22 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
+    def validate(self, data):
+        print()
+        print('VALIDATEEEEEEEEEEEEEEEEEEEEEEEE')
+        print(data)
+        print()
+
+        errors = {}
+        tag_list = self.initial_data.get('tags')
+        if not tag_list:
+            errors['tags'] = ['Обязательное поле.']
+        else:
+            data['tags'] = list(set(tag_list))
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
+
     def create(self, validated_data):
         validated_data.pop('ingredients')  # ингредиенты обрабатываются ниже
         # создаём копию validated_data, чтобы не изменять исходные данные:
@@ -154,7 +170,14 @@ class RecipeSerializer(serializers.ModelSerializer):
             })
 
         initial_ingredients_list = self.initial_data.get('ingredients')
-        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
+        if initial_ingredients_list:
+            ingredients_objects = get_ingredients_objects(
+                initial_ingredients_list
+            )
+        else:
+            raise serializers.ValidationError({
+                'ingredients': ['Обязательное поле.']
+            })
 
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
@@ -163,14 +186,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
+        print()
+        print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
+        print(validated_data)
+        print()
+
         tag_list = self.initial_data.get('tags')
         if tag_list:
             tags_objects = get_tags_objects(tag_list)
             instance.tags.set(tags_objects)
-        else:
-            raise serializers.ValidationError({
-                'tags': ['Обязательное поле.']
-            })
 
         initial_ingredients_list = self.initial_data.get('ingredients')
         ingredients_objects = get_ingredients_objects(initial_ingredients_list)
@@ -187,6 +211,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         instance.text = validated_data.get('text', instance.text)
 
         instance.save()
+
+        # return super().update(instance, validated_data)
         return instance
 
     def get_is_favorited(self, object):
