@@ -5,19 +5,19 @@ AMOUNT_ERROR_MESSAGE = ('Количество ингредиента укажи�
                         'качестве разделителя десятичной части.')
 
 
-def get_tags_objects(tag_list):
-    try:
-        return [
-            Tag.objects.get(id=tag_id) for tag_id in tag_list
-        ]
-    except Tag.DoesNotExist:
-        raise serializers.ValidationError({
-            'tags': ['Тега не существует.']
-        })
-    except ValueError:
-        raise serializers.ValidationError({
-            'tags': ['Тег должен передаваться натуральным числом.']
-        })
+# def get_tags_objects(tag_list):
+#     try:
+#         return [
+#             Tag.objects.get(id=tag_id) for tag_id in tag_list
+#         ]
+#     except Tag.DoesNotExist:
+#         raise serializers.ValidationError({
+#             'tags': ['Тега не существует.']
+#         })
+#     except ValueError:
+#         raise serializers.ValidationError({
+#             'tags': ['Тег должен передаваться натуральным числом.']
+#         })
 
 
 def get_ingredients_objects(initial_ingredients_list):
@@ -34,7 +34,7 @@ def get_ingredients_objects(initial_ingredients_list):
             })
         amount = ingredient_dict.get('amount')
         try:
-            amount = float(amount)
+            amount = float(amount)  # добавить проверку, что количество больше 0
         except ValueError:
             raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
                 'amount': [AMOUNT_ERROR_MESSAGE]
