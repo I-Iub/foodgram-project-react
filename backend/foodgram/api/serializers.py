@@ -119,7 +119,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     tags = TagSerializer(read_only=True, many=True)
-    ingredients = IngredientSerializer(many=True)
+    ingredients = IngredientSerializer(read_only=True, many=True)
     image = Base64ToImageField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -172,31 +172,29 @@ class RecipeSerializer(serializers.ModelSerializer):
         if errors:
             raise serializers.ValidationError(errors)
         data['tags'] = list(set(tag_list))
+        data['ingredients'] = initial_ingredients_list
         return data
 
     def create(self, validated_data):
-        validated_data.pop('ingredients')  # ингредиенты обрабатываются ниже
         # создаём копию validated_data, чтобы не изменять исходные данные:
         validated_data_poped = validated_data.copy()
         # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
         validated_data_poped.pop('image')
+        # удаляем, т.к. неправильный формат:
+        validated_data_poped.pop('ingredients')
+        validated_data_poped.pop('tags')
         # Проверка наличия в базе Рецепта, похожего на сохраняемый
         if Recipe.objects.filter(**validated_data_poped).exists():
             raise serializers.ValidationError('У вас уже есть такой рецепт')
 
-        tag_list = self.initial_data.get('tags')
+        tag_list = validated_data.pop('tags')
         if tag_list:
-            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+            tags_objects = [
+                get_object_or_404(Tag, pk=tag_id) for tag_id in tag_list
+            ]
 
-        initial_ingredients_list = self.initial_data.get('ingredients')
-        if initial_ingredients_list:
-            ingredients_objects = get_ingredients_objects(
-                initial_ingredients_list
-            )
-        # else:
-        #     raise serializers.ValidationError({
-        #         'ingredients': [REQUIRED_FIELD]
-        #     })
+        initial_ingredients_list = validated_data.pop('ingredients')
+        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
 
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
@@ -205,14 +203,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        print()
-        print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
-        print(validated_data)
-        print()
-        print(self.initial_data)
-        print()
-
-        # tag_list = self.initial_data.get('tags')
         tag_list = validated_data.pop('tags')
         if tag_list:
             tags_objects = [
@@ -220,22 +210,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             ]
             instance.tags.set(tags_objects)
 
-        initial_ingredients_list = self.initial_data.get('ingredients')  # попробовать изпользовать validated_data
+        initial_ingredients_list = validated_data.pop('ingredients')
         ingredients_objects = get_ingredients_objects(initial_ingredients_list)
-        if ingredients_objects:
-            instance.ingredients.set(ingredients_objects)
-
-        # instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
-        # instance.name = validated_data.get('name', instance.name)
-        # instance.image = validated_data.get('image', instance.image)
-        # instance.text = validated_data.get('text', instance.text)
-
-        # instance.save()
-        # validated_data.pop('tags')
-        validated_data.pop('ingredients')
+        instance.ingredients.set(ingredients_objects)
 
         return super().update(instance, validated_data)
-        # return instance
 
     def get_is_favorited(self, object):
         user = self.context.get('request').user
