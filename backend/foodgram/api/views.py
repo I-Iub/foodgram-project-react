@@ -1,7 +1,7 @@
 from io import StringIO
 from wsgiref.util import FileWrapper
 from django.contrib.auth.hashers import make_password
-from django.core.files import File
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,6 +11,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from recipes.models import Ingredient
 from users.models import User
 from users.permissions import (OrganizerOwner, RecipeAuthorOrReadOnly,
                                UserPermissions)
@@ -420,29 +421,60 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 def download_shopping_cart(request):
     user = request.user
 
-    recipes = Recipe.objects.filter(
-        shopping_cart__user__exact=user
-    ).prefetch_related('ingredients__measurement')
-    querysets = [recipe.ingredients.all() for recipe in recipes]
+    ingredients = Ingredient.objects.filter(
+        recipes__shopping_cart__user=user
+    ).values(
+        'measurement__name', 'measurement__measurement_unit'
+    ).annotate(amount=Sum('amount'))
+    # print()
+    # print(ingredients)
+    # print()
+    ingredient_list = []
+    for ingredient in ingredients:
+        # print(ingredient)
+        # print(
+        #     ingredient.get('measurement__name'),
+        #     f'({unit})',
+        #     ingredient.get('amount').normalize()
+        # )
+        normalized = ingredient.get('amount').normalize()
+        sign, digit, exponent = normalized.as_tuple()
+        if exponent <= 0:
+            amount = normalized
+        else:
+            amount = normalized.quantize(1)
 
-    ingredients_total = []
-    for queryset in querysets:
-        ingredients = [ingredient for ingredient in queryset]
-        ingredients_total += ingredients
-
-    shopping_list = {}
-    for ingredient in ingredients_total:
-        key = (f'{ingredient.measurement.name} '
-               f'({ingredient.measurement.measurement_unit})')
-        shopping_list[key] = (
-            shopping_list.get((key), 0) + ingredient.amount.normalize()
+        ingredient_list.append(
+            f"{ingredient.get('measurement__name')} "
+            f"({ingredient.get('measurement__measurement_unit')})"
+            f"\t{amount}"
         )
-    data = '\n'.join(
-        [
-            f'{name}\t{amount}'
-            for name, amount in shopping_list.items()
-        ]
-    )
+    data = '\n'.join(ingredient_list)
+    print(data)
+
+    # recipes = Recipe.objects.filter(
+    #     shopping_cart__user__exact=user
+    # ).prefetch_related('ingredients__measurement')
+    # querysets = [recipe.ingredients.all() for recipe in recipes]
+
+    # ingredients_total = []
+    # for queryset in querysets:
+    #     ingredients = [ingredient for ingredient in queryset]
+    #     ingredients_total += ingredients
+
+    # shopping_list = {}
+    # for ingredient in ingredients_total:
+    #     key = (f'{ingredient.measurement.name} '
+    #            f'({ingredient.measurement.measurement_unit})')
+    #     shopping_list[key] = (
+    #         shopping_list.get((key), 0) + ingredient.amount.normalize()
+    #     )
+    # data = '\n'.join(
+    #     [
+    #         f'{name}\t{amount}'
+    #         for name, amount in shopping_list.items()
+    #     ]
+    # )
 
     # file_name = f'{user.username}_shopping_cart.txt'
     # file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
