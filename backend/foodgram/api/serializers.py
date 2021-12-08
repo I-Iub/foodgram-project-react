@@ -7,7 +7,7 @@ from rest_framework import serializers
 from users.models import User
 
 from .fields import Base64ToImageField
-from .utils import get_ingredients_objects, get_object_if_exists, get_integer_list, get_unnatural  #, get_tags_objects
+from .utils import get_ingredients_objects, check_amount_list, check_id_list  #, get_tags_objects
 
 AMOUNT_ERROR_MESSAGE = ('количество ингредиента укажите числом с точкой в '
                         'качестве разделителя десятичной части.')
@@ -139,105 +139,43 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
-    # def validate_ingredients(self, value):
-    #     print()
-    #     print('validate_ingredients', value)
-    #     print()
-
-    #     errors = []
-
-    #     initial_ingredients_list = self.initial_data.get('ingredients')
-    #     if not initial_ingredients_list:  # повторяет код в validate для tags___________________
-    #         errors = [REQUIRED_FIELD]
-    #     else:
-    #         for ingredient_dict in initial_ingredients_list:
-    #             measurement_id = ingredient_dict.get('id')
-    #             try:
-    #                 Measurement.objects.get(id=measurement_id)
-    #             except Measurement.DoesNotExist:
-    #                 errors = errors + [
-    #                     f"Ингредиента '{measurement_id}' не существует."
-    #                 ]
-    #             except ValueError:
-    #                 errors = errors + [
-    #                     f"Ингредиент '{measurement_id}' должен передаваться "
-    #                     f"натуральным числом."
-    #                 ]
-
-    #             amount = ingredient_dict.get('amount')
-    #             try:
-    #                 amount = float(amount)  # добавить проверку, что количество больше 0
-    #                 if amount < 0:
-    #                     errors = errors + [
-    #                         f'{amount} - количество должно быть больше нуля'
-    #                     ]
-    #             except ValueError:
-    #                 errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
-    #                 # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-    #                 #     'amount': [AMOUNT_ERROR_MESSAGE]
-    #                 # })
-    #             except TypeError:
-    #                 errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
-    #                 # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-    #                 #     'amount': [AMOUNT_ERROR_MESSAGE]
-    #                 # })
-
-    #     if errors:
-    #         raise serializers.ValidationError({
-    #             'ingredients': errors
-    #         })
-    #     return value
-
     def validate(self, data):
         print()
         print('VALIDATEEEEEEEEEEEEEEEEEEEEEEEE')
         print(data)
         print()
 
-        errors = {'tags': []}
+        errors = {}
 
         tag_list = self.initial_data.get('tags')
-        print('TYPE', type(tag_list[1]))
         if not tag_list:
             errors['tags'] = [REQUIRED_FIELD]
-        unnatural = get_unnatural(tag_list)
-        if unnatural:
-            errors['tags'] = [
-                f'{unnatural} - должны быть натуральными числами.'
-            ]
         else:
-            for tag_id in tag_list:
-                # проверка наличия в базе:
-                if not Tag.objects.filter(id=tag_id).exists():
-                    errors['tags'] = errors.get('tags') + [
-                        f'{tag_id} - не существует.'
-                    ]
+            tag_errors = check_id_list(Tag, tag_list)
+            if tag_errors:
+                errors['tags'] = tag_errors
 
-        #         amount = ingredient_dict.get('amount')
-        #         try:
-        #             amount = float(amount)  # добавить проверку, что количество больше 0
-        #             if amount < 0:
-        #                 errors = errors + [
-        #                     f'{amount} - количество должно быть больше нуля'
-        #                 ]
-        #         except ValueError:
-        #             errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
-        #             # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-        #             #     'amount': [AMOUNT_ERROR_MESSAGE]
-        #             # })
-        #         except TypeError:
-        #             errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
-        #             # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-        #             #     'amount': [AMOUNT_ERROR_MESSAGE]
-        #             # })
+        initial_ingredients_list = self.initial_data.get('ingredients')
+        print(initial_ingredients_list)
+        if not initial_ingredients_list:
+            errors['ingredients'] = [REQUIRED_FIELD]
+        else:
+            measurement_list = []
+            amount_list = []
+            for ingredient in initial_ingredients_list:
+                measurement_list.append(ingredient.get('id'))
+                amount_list.append(ingredient.get('amount'))
 
-        # initial_ingredients_list = self.initial_data.get('ingredients')
-        # if not initial_ingredients_list:
-        #     errors['ingredients'] = [REQUIRED_FIELD]
-        # else:
-        #     data['ingredients'] = initial_ingredients_list
+            measurement_errors = check_id_list(Measurement, measurement_list)
+            amount_errors = check_amount_list(amount_list)
+            if measurement_errors or amount_errors:
+                errors['ingredients'] = {}
+            if measurement_errors:
+                errors['ingredients']['id'] = measurement_errors
+            if amount_errors:
+                errors['ingredients']['amount'] = amount_errors
 
-        if errors.get('tags'):
+        if errors:
             raise serializers.ValidationError(errors)
         data['tags'] = list(set(tag_list))
         return data

@@ -5,33 +5,15 @@ AMOUNT_ERROR_MESSAGE = ('Количество ингредиента укажи�
                         'качестве разделителя десятичной части.')
 
 
-# def get_tags_objects(tag_list):
-#     try:
-#         return [
-#             Tag.objects.get(id=tag_id) for tag_id in tag_list
-#         ]
-#     except Tag.DoesNotExist:
-#         raise serializers.ValidationError({
-#             'tags': ['Тега не существует.']
-#         })
-#     except ValueError:
-#         raise serializers.ValidationError({
-#             'tags': ['Тег должен передаваться натуральным числом.']
-#         })
-
 def get_unnatural(id_list):
     not_natural = []
     for id in id_list:
-        if type(id) == int:
-            next
         try:
             if int(id) <= 0:
                 not_natural.append(id)
         except ValueError:
             not_natural.append(id)
     return not_natural
-
-
 
 
 def get_ingredients_objects(initial_ingredients_list):
@@ -110,3 +92,34 @@ def get_object_if_exists(object_class, object_id):
                 f'{object_id} - id должен передаваться натуральным числом.'
             )
         }
+
+
+def check_id_list(object_class, id_list):
+    errors = []
+    unnatural = get_unnatural(id_list)
+    if unnatural:
+        errors.append(f'{unnatural} - должны быть натуральными числами.')
+    natural = set(id_list) - set(unnatural)
+    if natural:
+        not_exists = []
+        for id in natural:
+            # проверка наличия в базе:
+            if not object_class.objects.filter(pk=id).exists():
+                not_exists.append(id)
+        if not_exists:
+            errors.append(f'{not_exists} - не существует.')
+    return errors
+
+
+def check_amount_list(amount_list):
+    errors = []
+    for amount in amount_list:
+        try:
+            amount = float(amount)
+            if amount < 0:
+                errors.append(f'{amount} - количество должно быть больше нуля.')
+        except ValueError:
+            errors.append(f'{amount} - ' + AMOUNT_ERROR_MESSAGE)
+        except TypeError:
+            errors.append(f'{amount} - ' + AMOUNT_ERROR_MESSAGE)
+    return errors
