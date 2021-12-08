@@ -460,8 +460,9 @@ def set_password(request):
     serializer = UserPasswordSerializer(
         data=request.data, context=request
     )
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
+    # if not serializer.is_valid():
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     User.objects.filter(pk=request.user.id).update(
         password=make_password(request.data.get('new_password'))
     )

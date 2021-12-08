@@ -99,9 +99,7 @@ class UserPasswordSerializer(serializers.Serializer):
     def validate_current_password(self, value):
         user = get_object_or_404(User, pk=self.context.user.id)  # посмотреть где ещё применить в проекте get_object_or_404
         if not user.check_password(value):
-            raise serializers.ValidationError({
-                'current_password': 'Текущий пароль неверный.'
-            })
+            raise serializers.ValidationError('Текущий пароль неверный.')
         return value
 
 
