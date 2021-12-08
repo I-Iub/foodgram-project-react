@@ -7,8 +7,10 @@ from rest_framework import serializers
 from users.models import User
 
 from .fields import Base64ToImageField
-from .utils import get_ingredients_objects  #, get_tags_objects
+from .utils import get_ingredients_objects, get_object_if_exists, get_integer_list, get_unnatural  #, get_tags_objects
 
+AMOUNT_ERROR_MESSAGE = ('количество ингредиента укажите числом с точкой в '
+                        'качестве разделителя десятичной части.')
 REQUIRED_FIELD = 'Обязательное поле.'
 
 
@@ -137,39 +139,97 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
+    # def validate_ingredients(self, value):
+    #     print()
+    #     print('validate_ingredients', value)
+    #     print()
+
+    #     errors = []
+
+    #     initial_ingredients_list = self.initial_data.get('ingredients')
+    #     if not initial_ingredients_list:  # повторяет код в validate для tags___________________
+    #         errors = [REQUIRED_FIELD]
+    #     else:
+    #         for ingredient_dict in initial_ingredients_list:
+    #             measurement_id = ingredient_dict.get('id')
+    #             try:
+    #                 Measurement.objects.get(id=measurement_id)
+    #             except Measurement.DoesNotExist:
+    #                 errors = errors + [
+    #                     f"Ингредиента '{measurement_id}' не существует."
+    #                 ]
+    #             except ValueError:
+    #                 errors = errors + [
+    #                     f"Ингредиент '{measurement_id}' должен передаваться "
+    #                     f"натуральным числом."
+    #                 ]
+
+    #             amount = ingredient_dict.get('amount')
+    #             try:
+    #                 amount = float(amount)  # добавить проверку, что количество больше 0
+    #                 if amount < 0:
+    #                     errors = errors + [
+    #                         f'{amount} - количество должно быть больше нуля'
+    #                     ]
+    #             except ValueError:
+    #                 errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
+    #                 # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
+    #                 #     'amount': [AMOUNT_ERROR_MESSAGE]
+    #                 # })
+    #             except TypeError:
+    #                 errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
+    #                 # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
+    #                 #     'amount': [AMOUNT_ERROR_MESSAGE]
+    #                 # })
+
+    #     if errors:
+    #         raise serializers.ValidationError({
+    #             'ingredients': errors
+    #         })
+    #     return value
+
     def validate(self, data):
-        # print()
-        # print('VALIDATEEEEEEEEEEEEEEEEEEEEEEEE')
-        # print(data)
-        # print()
+        print()
+        print('VALIDATEEEEEEEEEEEEEEEEEEEEEEEE')
+        print(data)
+        print()
 
         errors = {'tags': []}
 
         tag_list = self.initial_data.get('tags')
+        print('TYPE', type(tag_list[1]))
         if not tag_list:
             errors['tags'] = [REQUIRED_FIELD]
+        unnatural = get_unnatural(tag_list)
+        if unnatural:
+            errors['tags'] = [
+                f'{unnatural} - должны быть натуральными числами.'
+            ]
         else:
-            data['tags'] = list(set(tag_list))
-        for tag_id in tag_list:
-            try:
-                Tag.objects.get(id=tag_id)
-            except Tag.DoesNotExist:
-                errors['tags'] = errors.get('tags') + [
-                    f"Тега '{tag_id}' не существует."
-                ]
-            except ValueError:
-                errors['tags'] = errors.get('tags') + [
-                    f"Тег '{tag_id}' должен передаваться натуральным числом."
-                ]
+            for tag_id in tag_list:
+                # проверка наличия в базе:
+                if not Tag.objects.filter(id=tag_id).exists():
+                    errors['tags'] = errors.get('tags') + [
+                        f'{tag_id} - не существует.'
+                    ]
 
-        # try:
-        #     [Tag.objects.get(id=tag_id) for tag_id in tag_list]
-        # except Tag.DoesNotExist:
-        #     errors['tags'] = errors.get('tags') + ['Тега не существует.']
-        # except ValueError:
-        #     errors['tags'] = errors.get('tags') + [
-        #         'Тег должен передаваться натуральным числом.'
-        #     ]
+        #         amount = ingredient_dict.get('amount')
+        #         try:
+        #             amount = float(amount)  # добавить проверку, что количество больше 0
+        #             if amount < 0:
+        #                 errors = errors + [
+        #                     f'{amount} - количество должно быть больше нуля'
+        #                 ]
+        #         except ValueError:
+        #             errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
+        #             # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
+        #             #     'amount': [AMOUNT_ERROR_MESSAGE]
+        #             # })
+        #         except TypeError:
+        #             errors = errors + [f'{amount} - ' + AMOUNT_ERROR_MESSAGE]
+        #             # raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
+        #             #     'amount': [AMOUNT_ERROR_MESSAGE]
+        #             # })
 
         # initial_ingredients_list = self.initial_data.get('ingredients')
         # if not initial_ingredients_list:
@@ -179,6 +239,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         if errors.get('tags'):
             raise serializers.ValidationError(errors)
+        data['tags'] = list(set(tag_list))
         return data
 
     def create(self, validated_data):
@@ -200,10 +261,10 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredients_objects = get_ingredients_objects(
                 initial_ingredients_list
             )
-        else:
-            raise serializers.ValidationError({
-                'ingredients': ['Обязательное поле.']
-            })
+        # else:
+        #     raise serializers.ValidationError({
+        #         'ingredients': [REQUIRED_FIELD]
+        #     })
 
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
@@ -212,14 +273,16 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        print()
-        print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
-        print(validated_data)
-        print()
+        # print()
+        # print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
+        # print(validated_data)
+        # print()
 
         tag_list = self.initial_data.get('tags')
         if tag_list:
-            tags_objects = [Tag.objects.get(id=tag_id) for tag_id in tag_list]
+            tags_objects = [
+                get_object_or_404(Tag, pk=tag_id) for tag_id in tag_list
+            ]
             instance.tags.set(tags_objects)
 
         initial_ingredients_list = self.initial_data.get('ingredients')
