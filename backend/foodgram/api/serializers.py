@@ -7,7 +7,8 @@ from rest_framework import serializers
 from users.models import User
 
 from .fields import Base64ToImageField
-from .utils import get_ingredients_objects, check_amount_list, check_id_list  #, get_tags_objects
+from .utils import (check_id_list, check_ingredients_data,
+                    get_ingredients_objects)
 
 AMOUNT_ERROR_MESSAGE = ('количество ингредиента укажите числом с точкой в '
                         'качестве разделителя десятичной части.')
@@ -154,39 +155,48 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not initial_ingredients_list:
             errors['ingredients'] = [REQUIRED_FIELD]
         else:
-            measurement_list = []
-            amount_list = []
-            for ingredient in initial_ingredients_list:
-                measurement_list.append(ingredient.get('id'))
-                amount_list.append(ingredient.get('amount'))
+            ingredients_errors = check_ingredients_data(
+                initial_ingredients_list
+            )
+            if ingredients_errors:
+                errors['ingredients'] = ingredients_errors
+        # if not initial_ingredients_list:
+        #     errors['ingredients'] = [REQUIRED_FIELD]
+        # else:
+        #     measurement_list = []
+        #     amount_list = []
+        #     for ingredient in initial_ingredients_list:
+        #         measurement_list.append(ingredient.get('id'))
+        #         amount_list.append(ingredient.get('amount'))
 
-            measurement_errors = check_id_list(Measurement, measurement_list)
-            amount_errors = check_amount_list(amount_list)
-            if measurement_errors or amount_errors:
-                errors['ingredients'] = {}
-            if measurement_errors:
-                errors['ingredients']['id'] = measurement_errors
-            if amount_errors:
-                errors['ingredients']['amount'] = amount_errors
+        #     measurement_errors = check_id_list(Measurement, measurement_list)
+        #     amount_errors = check_amount_list(amount_list)
+        #     if measurement_errors or amount_errors:
+        #         errors['ingredients'] = {}
+        #     if measurement_errors:
+        #         errors['ingredients']['id'] = measurement_errors
+        #     if amount_errors:
+        #         errors['ingredients']['amount'] = amount_errors
 
         if errors:
             raise serializers.ValidationError(errors)
+
+        # создаём копию data, чтобы не изменять исходные данные:
+        data_poped = data.copy()
+        # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
+        if 'image' in data:
+            data_poped.pop('image')
+        # Проверка наличия в базе Рецепта, похожего на сохраняемый
+        if Recipe.objects.filter(**data_poped).exists():
+            raise serializers.ValidationError({
+                'errors': 'У вас уже есть такой рецепт'
+            })
+
         data['tags'] = list(set(tag_list))
         data['ingredients'] = initial_ingredients_list
         return data
 
     def create(self, validated_data):
-        # создаём копию validated_data, чтобы не изменять исходные данные:
-        validated_data_poped = validated_data.copy()
-        # удаляем кортинку (<ContentFile>), т.к. эти данные меняются:
-        validated_data_poped.pop('image')
-        # удаляем, т.к. неправильный формат:
-        validated_data_poped.pop('ingredients')
-        validated_data_poped.pop('tags')
-        # Проверка наличия в базе Рецепта, похожего на сохраняемый
-        if Recipe.objects.filter(**validated_data_poped).exists():
-            raise serializers.ValidationError('У вас уже есть такой рецепт')
-
         tag_list = validated_data.pop('tags')
         if tag_list:
             tags_objects = [

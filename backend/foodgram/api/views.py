@@ -4,16 +4,17 @@ from django.core.files import File
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Measurement, Recipe, Tag
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from users.models import User
 from users.permissions import (OrganizerOwner, RecipeAuthorOrReadOnly,
                                UserPermissions)
 
+from .filters import IngredientFilter
 from .pagination import CustomPagination
 from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           RecipeSerializer, ShoppingCartSerializer,
@@ -85,21 +86,22 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     queryset = Measurement.objects.all()
     serializer_class = MeasurementSerializer
     filter_backends = (
-        DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter
+        IngredientFilter, filters.OrderingFilter
     )
-    filterset_fields = ('name',)
+    # filterset_fields = ('name',)
     search_fields = ('^name',)
     ordering_fields = ('name',)
+    pagination_class = None
 
-    def list(self, request, *args, **kwargs):
-        search_parameter = request.query_params.getlist('name')[-1]
-        queryset = Measurement.objects.filter(
-            name__istartswith=search_parameter
-        )
-        serializer = MeasurementSerializer(
-            queryset, many=True
-        )
-        return Response(serializer.data)
+    # def list(self, request, *args, **kwargs):
+    #     search_parameter = request.query_params.getlist('name')[-1]
+    #     queryset = Measurement.objects.filter(
+    #         name__istartswith=search_parameter
+    #     )
+    #     serializer = MeasurementSerializer(
+    #         queryset, many=True
+    #     )
+    #     return Response(serializer.data)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
