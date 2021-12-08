@@ -1,4 +1,5 @@
-from django.conf import settings
+from io import StringIO
+from wsgiref.util import FileWrapper
 from django.contrib.auth.hashers import make_password
 from django.core.files import File
 from django.http import HttpResponse
@@ -443,14 +444,19 @@ def download_shopping_cart(request):
         ]
     )
 
+    # file_name = f'{user.username}_shopping_cart.txt'
+    # file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
+    # with open(file_path, 'w') as file_object:
+    #     file = File(file_object)
+    #     file.write(data)
+    # response = HttpResponse(open(file_path), content_type='text/plain')
+    # response['Content-Disposition'] = f'attachment; filename={file_name}'
     file_name = f'{user.username}_shopping_cart.txt'
-    file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
-    with open(file_path, 'w') as file_object:
-        file = File(file_object)
-        file.write(data)  # добавить обработку ошибок ввода/вывода (exception)
-
-    response = HttpResponse(open(file_path), content_type='text/plain')
+    file = StringIO(data)
+    response = HttpResponse(FileWrapper(file), content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename={file_name}'
+    # response['Content-Length'] = myfile.tell()
+
     return response
 
 
@@ -461,8 +467,6 @@ def set_password(request):
         data=request.data, context=request
     )
     serializer.is_valid(raise_exception=True)
-    # if not serializer.is_valid():
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     User.objects.filter(pk=request.user.id).update(
         password=make_password(request.data.get('new_password'))
     )
