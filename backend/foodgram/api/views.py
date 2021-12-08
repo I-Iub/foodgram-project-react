@@ -90,20 +90,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     filter_backends = (
         IngredientFilter, filters.OrderingFilter
     )
-    # filterset_fields = ('name',)
     search_fields = ('^name',)
     ordering_fields = ('name',)
     pagination_class = None
-
-    # def list(self, request, *args, **kwargs):
-    #     search_parameter = request.query_params.getlist('name')[-1]
-    #     queryset = Measurement.objects.filter(
-    #         name__istartswith=search_parameter
-    #     )
-    #     serializer = MeasurementSerializer(
-    #         queryset, many=True
-    #     )
-    #     return Response(serializer.data)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
