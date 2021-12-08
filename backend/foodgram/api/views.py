@@ -426,17 +426,8 @@ def download_shopping_cart(request):
     ).values(
         'measurement__name', 'measurement__measurement_unit'
     ).annotate(amount=Sum('amount'))
-    # print()
-    # print(ingredients)
-    # print()
     ingredient_list = []
     for ingredient in ingredients:
-        # print(ingredient)
-        # print(
-        #     ingredient.get('measurement__name'),
-        #     f'({unit})',
-        #     ingredient.get('amount').normalize()
-        # )
         normalized = ingredient.get('amount').normalize()
         sign, digit, exponent = normalized.as_tuple()
         if exponent <= 0:
@@ -450,44 +441,10 @@ def download_shopping_cart(request):
             f"\t{amount}"
         )
     data = '\n'.join(ingredient_list)
-    print(data)
-
-    # recipes = Recipe.objects.filter(
-    #     shopping_cart__user__exact=user
-    # ).prefetch_related('ingredients__measurement')
-    # querysets = [recipe.ingredients.all() for recipe in recipes]
-
-    # ingredients_total = []
-    # for queryset in querysets:
-    #     ingredients = [ingredient for ingredient in queryset]
-    #     ingredients_total += ingredients
-
-    # shopping_list = {}
-    # for ingredient in ingredients_total:
-    #     key = (f'{ingredient.measurement.name} '
-    #            f'({ingredient.measurement.measurement_unit})')
-    #     shopping_list[key] = (
-    #         shopping_list.get((key), 0) + ingredient.amount.normalize()
-    #     )
-    # data = '\n'.join(
-    #     [
-    #         f'{name}\t{amount}'
-    #         for name, amount in shopping_list.items()
-    #     ]
-    # )
-
-    # file_name = f'{user.username}_shopping_cart.txt'
-    # file_path = f'{settings.MEDIA_ROOT}/shopping_carts/{file_name}'
-    # with open(file_path, 'w') as file_object:
-    #     file = File(file_object)
-    #     file.write(data)
-    # response = HttpResponse(open(file_path), content_type='text/plain')
-    # response['Content-Disposition'] = f'attachment; filename={file_name}'
     file_name = f'{user.username}_shopping_cart.txt'
     file = StringIO(data)
     response = HttpResponse(FileWrapper(file), content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename={file_name}'
-    # response['Content-Length'] = myfile.tell()
 
     return response
 
