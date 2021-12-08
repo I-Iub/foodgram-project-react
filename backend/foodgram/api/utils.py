@@ -18,43 +18,25 @@ def get_unnatural(id_list):
 
 def get_ingredients_objects(initial_ingredients_list):
     ingredients_objects = []
-    # for ingredient_dict in initial_ingredients_list:
-    #     measurement_id = ingredient_dict.get('id')
-    #     try:
-    #         measurement_object = Measurement.objects.get(id=measurement_id)
-    #     except Measurement.DoesNotExist:
-    #         raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-    #             'ingredients': [
-    #                 'Ингредиента не существует.'
-    #             ]
-    #         })
-    #     amount = ingredient_dict.get('amount')
-    #     try:
-    #         amount = float(amount)  # добавить проверку, что количество больше 0
-    #     except ValueError:
-    #         raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-    #             'amount': [AMOUNT_ERROR_MESSAGE]
-    #         })
-    #     except TypeError:
-    #         raise serializers.ValidationError({  # Для валидации в сериализаторе используется метод validate
-    #             'amount': [AMOUNT_ERROR_MESSAGE]
-    #         })
     for ingredient_dict in initial_ingredients_list:
         measurement_id = ingredient_dict.get('id')
         measurement_object = Measurement.objects.get(id=measurement_id)
         amount = ingredient_dict.get('amount')
-        if not Ingredient.objects.filter(
-                measurement=measurement_object,
-                amount=amount).exists():
-            ingredient_object = Ingredient.objects.create(
-                measurement=measurement_object,
-                amount=amount
-            )
-        else:
-            ingredient_object = Ingredient.objects.get(
-                measurement=measurement_object,
-                amount=amount
-            )
+        ingredient_object, created = Ingredient.objects.get_or_create(
+            measurement=measurement_object, amount=amount
+        )
+        # if not Ingredient.objects.filter(
+        #         measurement=measurement_object,
+        #         amount=amount).exists():
+        #     ingredient_object = Ingredient.objects.create(
+        #         measurement=measurement_object,
+        #         amount=amount
+        #     )
+        # else:
+        #     ingredient_object = Ingredient.objects.get(
+        #         measurement=measurement_object,
+        #         amount=amount
+        #     )
         ingredients_objects += [ingredient_object]
     return ingredients_objects
 

@@ -140,11 +140,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        print()
-        print('VALIDATEEEEEEEEEEEEEEEEEEEEEEEE')
-        print(data)
-        print()
-
         errors = {}
 
         tag_list = self.initial_data.get('tags')
@@ -155,8 +150,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             if tag_errors:
                 errors['tags'] = tag_errors
 
-        initial_ingredients_list = self.initial_data.get('ingredients')
-        print(initial_ingredients_list)
+        initial_ingredients_list = self.initial_data.get('ingredients')  # использовать data????
         if not initial_ingredients_list:
             errors['ingredients'] = [REQUIRED_FIELD]
         else:
@@ -211,36 +205,37 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        # print()
-        # print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
-        # print(validated_data)
-        # print()
+        print()
+        print('PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT_PRINT')
+        print(validated_data)
+        print()
+        print(self.initial_data)
+        print()
 
-        tag_list = self.initial_data.get('tags')
+        # tag_list = self.initial_data.get('tags')
+        tag_list = validated_data.pop('tags')
         if tag_list:
             tags_objects = [
                 get_object_or_404(Tag, pk=tag_id) for tag_id in tag_list
             ]
             instance.tags.set(tags_objects)
 
-        initial_ingredients_list = self.initial_data.get('ingredients')
+        initial_ingredients_list = self.initial_data.get('ingredients')  # попробовать изпользовать validated_data
         ingredients_objects = get_ingredients_objects(initial_ingredients_list)
-
         if ingredients_objects:
             instance.ingredients.set(ingredients_objects)
 
-        cooking_time = self.initial_data.get('cooking_time')
-        if cooking_time:
-            instance.cooking_time = cooking_time
+        # instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
+        # instance.name = validated_data.get('name', instance.name)
+        # instance.image = validated_data.get('image', instance.image)
+        # instance.text = validated_data.get('text', instance.text)
 
-        instance.name = validated_data.get('name', instance.name)
-        instance.image = validated_data.get('image', instance.image)
-        instance.text = validated_data.get('text', instance.text)
+        # instance.save()
+        # validated_data.pop('tags')
+        validated_data.pop('ingredients')
 
-        instance.save()
-
-        # return super().update(instance, validated_data)
-        return instance
+        return super().update(instance, validated_data)
+        # return instance
 
     def get_is_favorited(self, object):
         user = self.context.get('request').user
