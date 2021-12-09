@@ -1,4 +1,5 @@
 from django.db import models
+
 from users.models import User
 
 RECIPE_MIN_COOKING_TIME = 1

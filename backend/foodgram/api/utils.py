@@ -1,4 +1,4 @@
-from recipes.models import Ingredient, Measurement  # , Tag
+from recipes.models import Ingredient, Measurement
 
 AMOUNT_ERROR_MESSAGE = ('Количество ингредиента укажите числом с точкой в '
                         'качестве разделителя десятичной части.')
