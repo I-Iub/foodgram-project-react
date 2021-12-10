@@ -9,9 +9,6 @@ services:
       - ./.env
 
   web:
-    # build:
-    #   context: ../backend/foodgram
-    #   dockerfile: Dockerfile
     image: zealousblack/foodgram:latest
     restart: always
     volumes:
@@ -23,9 +20,10 @@ services:
       - ./.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    # build:
+    #   context: ../frontend
+    #   dockerfile: Dockerfile
+    image: zealousblack/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
   nginx:
