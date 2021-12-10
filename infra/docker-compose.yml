@@ -9,10 +9,10 @@ services:
       - ./.env
 
   web:
-    build:
-      context: ../backend/foodgram
-      dockerfile: Dockerfile
-#    image: zealousblack/foodgram:latest
+    # build:
+    #   context: ../backend/foodgram
+    #   dockerfile: Dockerfile
+    image: zealousblack/foodgram:latest
     restart: always
     volumes:
       - static_value:/code/static_foodgram/
