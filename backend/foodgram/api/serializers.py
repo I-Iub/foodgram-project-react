@@ -271,6 +271,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_recipes(self, object):
+        print()
+        print('get_recipes')
+        print()
         request = self.context.get('request')
         if not request.query_params.get('recipes_limit'):
             recipes = Recipe.objects.filter(author=object.author)
