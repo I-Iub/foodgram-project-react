@@ -112,9 +112,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ordering_fields = ('name',)
     search_fields = ('ingredients',)
 
-    # def get_queryset(self):
-    #     return Recipe.objects.all()
-
     # def list(self, request, *args, **kwargs):
     #     query_dict = request.query_params  # <QueryDict: {...}>
     #     queryset = Recipe.objects.all()
