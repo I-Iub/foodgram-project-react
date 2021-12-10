@@ -10,7 +10,6 @@ class IngredientFilter(SearchFilter):
 
 class RecipeFilter(FilterSet):
     tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
-    # эти фильты не работают совместно, только по отдельности:  ____________________
     is_favorited = filters.BooleanFilter(method='filters_is_favorited')
     is_in_shopping_cart = filters.BooleanFilter(
         method='filters_is_in_shopping_cart'

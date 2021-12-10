@@ -127,8 +127,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     #             next
     #         else:
     #             return Response(
-    #                 f"Ошибка: в базе данных нет тегов с указанным в параметре "
-    #                 f"запроса слагом {tags_slug}.",
+    #                 f"Ошибка: в базе данных нет тегов с указанным в "
+    #                 f"параметре запроса слагом {tags_slug}.",
     #                 status=status.HTTP_400_BAD_REQUEST
     #             )
     #     # фильтруем queryset по тегам
@@ -162,8 +162,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     #             author__in=author_id_integer_list
     #         ).distinct()  # только уникальные записи
 
-    #     is_favorited = query_dict.get('is_favorited')  # возвращает последний
-    #     if is_favorited is not None and is_favorited not in ('true', 'false'):
+    #      is_favorited = query_dict.get('is_favorited')  # возвращает послед.
+    #     if (is_favorited is not None
+    #             and is_favorited not in ('true', 'false')):
     #         return Response(
     #             "Ошибка: в параметре запроса 'is_favorited' должно "
     #             "быть false или true",
@@ -218,11 +219,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = (OrganizerOwner,)
 
     def list(self, request):
-        # print()
-        # print('LIST_LIST', request)_________________________________________________________
-        # print()
         context = super().get_serializer_context()
-        # print('context', context)________________________________________________________
         recipes_limit = request.query_params.getlist('recipes_limit')
 
         if recipes_limit:

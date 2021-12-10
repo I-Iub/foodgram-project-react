@@ -98,7 +98,7 @@ class UserPasswordSerializer(serializers.Serializer):
         return value
 
     def validate_current_password(self, value):
-        user = get_object_or_404(User, pk=self.context.user.id)  # посмотреть где ещё применить в проекте get_object_or_404
+        user = get_object_or_404(User, pk=self.context.user.id)
         if not user.check_password(value):
             raise serializers.ValidationError('Текущий пароль неверный.')
         return value
@@ -150,7 +150,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             if tag_errors:
                 errors['tags'] = tag_errors
 
-        initial_ingredients_list = self.initial_data.get('ingredients')  # использовать data????
+        initial_ingredients_list = self.initial_data.get('ingredients')
         if not initial_ingredients_list:
             errors['ingredients'] = [REQUIRED_FIELD]
         else:
