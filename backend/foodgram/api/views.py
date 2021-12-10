@@ -26,6 +26,10 @@ from .serializers import (FavoriteSerializer, MeasurementSerializer,
                           UserSerializer)
 from .utils import get_integer_list, get_object_if_exists
 
+RECIPES_LIMIT_ERROR_MESSAGE = ("Ошибка: в параметре запроса 'recipes_limit' "
+                               "должно быть указано целое неотрицательное "
+                               "число.")
+
 
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
@@ -214,9 +218,11 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = (OrganizerOwner,)
 
     def list(self, request):
-        print()
-        print('LIST_LIST')
-        print()
+        # print()
+        # print('LIST_LIST', request)_________________________________________________________
+        # print()
+        context = super().get_serializer_context()
+        # print('context', context)________________________________________________________
         recipes_limit = request.query_params.getlist('recipes_limit')
 
         if recipes_limit:
@@ -231,10 +237,10 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             # проверяем, что заначение параметра >= 0:
             if recipes_limit_integer < 0:
                 return Response(
-                    "Ошибка: в параметре запроса 'recipes_limit' должно быть "
-                    "указано целое неотрицательное число",
+                    RECIPES_LIMIT_ERROR_MESSAGE,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            context['recipes_limit'] = recipes_limit_integer
 
         queryset = Subscription.objects.filter(
             user=request.user.id
@@ -242,10 +248,10 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = self.get_serializer(page, context=context, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, context=context, many=True)
         return Response(serializer.data)
 
     @action(
@@ -257,13 +263,26 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, author_id):
         user = request.user
 
+        context = super().get_serializer_context()
+
         recipes_limit = request.query_params.getlist('recipes_limit')
-        recipes_limit_integer = get_integer_list(
-            recipes_limit, 'recipes_limit'
-        )
-        error_message = recipes_limit_integer.get('error_message')
-        if error_message:
-            return Response(error_message)
+
+        if recipes_limit:
+            # проверка: указанный в запросе параметр
+            # "recipes_limit" можно преобразовать в int
+            data_dictionary = get_integer_list(recipes_limit, 'recipes_limit')
+            error_message = data_dictionary.get('error_message')
+            if error_message:
+                return Response(error_message)
+            # если передано несколько значений, берётся последнее:
+            recipes_limit_integer = data_dictionary.get('list')[-1]
+            # проверяем, что заначение параметра >= 0:
+            if recipes_limit_integer < 0:
+                return Response(
+                    RECIPES_LIMIT_ERROR_MESSAGE,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            context['recipes_limit'] = recipes_limit_integer
 
         if user.id == int(author_id):
             return Response(
@@ -295,7 +314,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 user=user, author=author
             )
             serializer = SubscriptionSerializer(
-                subscription, context={'request': request}
+                subscription, context=context
             )
             return Response(serializer.data)
 

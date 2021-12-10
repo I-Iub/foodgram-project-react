@@ -271,16 +271,23 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_recipes(self, object):
-        print()
-        print('get_recipes')
-        print()
-        request = self.context.get('request')
-        if not request.query_params.get('recipes_limit'):
-            recipes = Recipe.objects.filter(author=object.author)
+        # print()
+        # print('serializer:', self.context.get('recipes_limit'))
+        # print()
+        # request = self.context.get('request')
+        # if not request.query_params.get('recipes_limit'):
+        #     recipes = Recipe.objects.filter(author=object.author)
+        #     return SubscriptionRecipeSerializer(recipes, many=True).data
+        # recipes_limit = int(request.query_params.get('recipes_limit'))
+        # recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
+
+        recipes_limit = self.context.get('recipes_limit')
+        recipes = Recipe.objects.filter(author=object.author)
+        if not recipes_limit:
             return SubscriptionRecipeSerializer(recipes, many=True).data
-        recipes_limit = int(request.query_params.get('recipes_limit'))
-        recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
-        return SubscriptionRecipeSerializer(recipes, many=True).data
+        return SubscriptionRecipeSerializer(
+            recipes[:recipes_limit], many=True
+        ).data
 
     def get_recipes_count(self, object):
         return Recipe.objects.filter(author=object.author).count()

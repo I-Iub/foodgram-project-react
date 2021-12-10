@@ -43,7 +43,8 @@ def get_integer_list(parameter_list, parameter_name):
     except ValueError:
         return {
             'error_message': f"Ошибка: в параметре запроса '{parameter_name}' "
-                             f"должно быть указано натуральное число."
+                             f"должно быть указано целое неотрицательное "
+                             f"число."
         }
 
 
