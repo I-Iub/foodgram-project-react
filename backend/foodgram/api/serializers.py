@@ -159,23 +159,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
             if ingredients_errors:
                 errors['ingredients'] = ingredients_errors
-        # if not initial_ingredients_list:
-        #     errors['ingredients'] = [REQUIRED_FIELD]
-        # else:
-        #     measurement_list = []
-        #     amount_list = []
-        #     for ingredient in initial_ingredients_list:
-        #         measurement_list.append(ingredient.get('id'))
-        #         amount_list.append(ingredient.get('amount'))
-
-        #     measurement_errors = check_id_list(Measurement, measurement_list)
-        #     amount_errors = check_amount_list(amount_list)
-        #     if measurement_errors or amount_errors:
-        #         errors['ingredients'] = {}
-        #     if measurement_errors:
-        #         errors['ingredients']['id'] = measurement_errors
-        #     if amount_errors:
-        #         errors['ingredients']['amount'] = amount_errors
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -271,16 +254,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_recipes(self, object):
-        # print()
-        # print('serializer:', self.context.get('recipes_limit'))
-        # print()
-        # request = self.context.get('request')
-        # if not request.query_params.get('recipes_limit'):
-        #     recipes = Recipe.objects.filter(author=object.author)
-        #     return SubscriptionRecipeSerializer(recipes, many=True).data
-        # recipes_limit = int(request.query_params.get('recipes_limit'))
-        # recipes = Recipe.objects.filter(author=object.author)[:recipes_limit]
-
         recipes_limit = self.context.get('recipes_limit')
         recipes = Recipe.objects.filter(author=object.author)
         if not recipes_limit:

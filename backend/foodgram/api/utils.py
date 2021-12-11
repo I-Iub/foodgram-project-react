@@ -13,18 +13,6 @@ def get_ingredients_objects(initial_ingredients_list):
         ingredient_object, created = Ingredient.objects.get_or_create(
             measurement=measurement_object, amount=amount
         )
-        # if not Ingredient.objects.filter(
-        #         measurement=measurement_object,
-        #         amount=amount).exists():
-        #     ingredient_object = Ingredient.objects.create(
-        #         measurement=measurement_object,
-        #         amount=amount
-        #     )
-        # else:
-        #     ingredient_object = Ingredient.objects.get(
-        #         measurement=measurement_object,
-        #         amount=amount
-        #     )
         ingredients_objects += [ingredient_object]
     return ingredients_objects
 

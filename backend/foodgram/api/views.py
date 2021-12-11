@@ -29,6 +29,7 @@ from .utils import get_integer_list, get_object_if_exists
 RECIPES_LIMIT_ERROR_MESSAGE = ("Ошибка: в параметре запроса 'recipes_limit' "
                                "должно быть указано целое неотрицательное "
                                "число.")
+UNKNOWN_REQUEST = {'errors': 'Неизвестный или неразрешенный запрос.'}
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
@@ -82,9 +83,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
             )
         else:
             return Response(
-                {
-                    'errors': 'Неизвестный или неразрешенный запрос.'
-                },
+                UNKNOWN_REQUEST,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -111,96 +110,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_fields = ('tags', 'author')
     ordering_fields = ('name',)
     search_fields = ('ingredients',)
-
-    # def list(self, request, *args, **kwargs):
-    #     query_dict = request.query_params  # <QueryDict: {...}>
-    #     queryset = Recipe.objects.all()
-
-    #     tags_slug_list = query_dict.getlist('tags')  # ['tag_slug1', ...]
-    #     # проверка: в базе данных есть теги с указанным
-    #     # в параметре запроса "tags" слагом
-    #     for tags_slug in tags_slug_list:
-    #         if Tag.objects.filter(slug=tags_slug).exists():
-    #             next
-    #         else:
-    #             return Response(
-    #                 f"Ошибка: в базе данных нет тегов с указанным в "
-    #                 f"параметре запроса слагом {tags_slug}.",
-    #                 status=status.HTTP_400_BAD_REQUEST
-    #             )
-    #     # фильтруем queryset по тегам
-    #     if tags_slug_list:
-    #         queryset = queryset.filter(
-    #             tags__slug__in=tags_slug_list
-    #         ).distinct()  # только уникальные записи
-
-    #     author_id_list = query_dict.getlist('author')  # [<str>, ...]
-    #     if author_id_list:
-    #         # проверка: указанный в запросе параметр
-    #         # "author" можно преобразовать в int
-    #         data_dictionary = get_integer_list(author_id_list, 'author')
-    #         error_message = data_dictionary.get('error_message')
-    #         if error_message:
-    #             return Response(error_message)
-    #         author_id_integer_list = data_dictionary.get('list')
-    #         # проверяем, что указанные в параметре запроса авторы есть в БД
-    #         for author_id in author_id_integer_list:
-    #             if User.objects.filter(pk=author_id).exists():
-    #                 next
-    #             else:
-    #                 return Response(
-    #                     f"Ошибка: в базе данных нет пользователя с "
-    #                     f"id={author_id}, указанным в параметре запроса "
-    #                     f"'author'.",
-    #                     status=status.HTTP_400_BAD_REQUEST
-    #                 )
-    #         # фильтруем рецепты по авторам
-    #         queryset = queryset.filter(
-    #             author__in=author_id_integer_list
-    #         ).distinct()  # только уникальные записи
-
-    #      is_favorited = query_dict.get('is_favorited')  # возвращает послед.
-    #     if (is_favorited is not None
-    #             and is_favorited not in ('true', 'false')):
-    #         return Response(
-    #             "Ошибка: в параметре запроса 'is_favorited' должно "
-    #             "быть false или true",
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     if is_favorited == 'true':
-    #         recipe_id_list = [
-    #             favorite.recipe.id for favorite in Favorite.objects.filter(
-    #                 user=request.user.id
-    #             ).only('recipe')
-    #         ]
-    #         queryset = queryset.filter(pk__in=recipe_id_list)
-
-    #     is_in_shopping_cart = query_dict.get(  # возвращает последний
-    #         'is_in_shopping_cart'
-    #     )
-    #     if (is_in_shopping_cart is not None
-    #             and is_in_shopping_cart not in ('true', 'false')):
-    #         return Response(
-    #             "Ошибка: в параметре запроса 'is_in_shopping_cart' должно "
-    #             "быть true или false",
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     if is_in_shopping_cart == 'true':
-    #         shopping_carts = ShoppingCart.objects.filter(
-    #             user=request.user.id
-    #         ).select_related('recipe')
-    #         recipes_list = [cart.recipe for cart in shopping_carts]
-    #         queryset = [
-    #             recipe for recipe in queryset if recipe in recipes_list
-    #         ]
-
-    #     page = self.paginate_queryset(queryset)
-    #     if page is not None:
-    #         serializer = self.get_serializer(page, many=True)
-    #         return self.get_paginated_response(serializer.data)
-
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -234,6 +143,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                     RECIPES_LIMIT_ERROR_MESSAGE,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            # передаём обработанный параметр recipes_limit в context
             context['recipes_limit'] = recipes_limit_integer
 
         queryset = Subscription.objects.filter(
@@ -276,6 +186,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                     RECIPES_LIMIT_ERROR_MESSAGE,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            # передаём обработанный параметр recipes_limit в context
             context['recipes_limit'] = recipes_limit_integer
 
         if user.id == int(author_id):
@@ -328,9 +239,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             )
         else:
             return Response(
-                {
-                    'errors': 'Неизвестный или неразрешенный запрос.'
-                },
+                UNKNOWN_REQUEST,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -419,9 +328,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
             )
         else:
             return Response(
-                {
-                    'errors': 'Неизвестный или неразрешенный запрос.'
-                },
+                UNKNOWN_REQUEST,
                 status=status.HTTP_400_BAD_REQUEST
             )
 

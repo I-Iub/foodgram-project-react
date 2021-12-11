@@ -1,11 +1,9 @@
 import os
-from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-# SECRET_KEY = 'django-insecure-3ij%1yqnj15nzc1_f881i3#y%2r*@=lt#=3^x0i8s^195$w)os'
 
 DEBUG = True
 
@@ -68,13 +66,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT')
     }
 }
-# Удалить перед деплоем на сервер:
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -129,9 +120,4 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 6,
-}
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=14),  # уменьшить после завершения проекта
-    'AUTH_HEADER_TYPES': ('Bearer',),
 }

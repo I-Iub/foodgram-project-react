@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from .models import User
@@ -13,7 +14,7 @@ class EmailPasswordPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({
                 'email': 'Неверно указан адрес электронной почты.'
             })
-        user = User.objects.get(email=data.get('email'))
+        user = get_object_or_404(User, email=data.get('email'))
         if not user.check_password(data.get('password')):
             raise serializers.ValidationError({
                 'password': 'Пароль неправильный.'
