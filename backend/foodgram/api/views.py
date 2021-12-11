@@ -18,7 +18,8 @@ from api.serializers import (FavoriteSerializer, MeasurementSerializer,
                              ShortRecipeSerializer, SubscriptionSerializer,
                              TagSerializer, UserPasswordSerializer,
                              UserSerializer)
-from api.utils import get_integer_list, get_object_if_exists
+from api.utils import (check_recipes_limit, get_integer_list,
+                       get_object_if_exists)
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from users.models import User
@@ -128,22 +129,12 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         recipes_limit = request.query_params.getlist('recipes_limit')
 
         if recipes_limit:
-            # проверка: указанный в запросе параметр
-            # "recipes_limit" можно преобразовать в int
-            data_dictionary = get_integer_list(recipes_limit, 'recipes_limit')
-            error_message = data_dictionary.get('error_message')
+            recipes_limit, error_message = check_recipes_limit(recipes_limit)
             if error_message:
-                return Response(error_message)
-            # если передано несколько значений, берётся последнее:
-            recipes_limit_integer = data_dictionary.get('list')[-1]
-            # проверяем, что заначение параметра >= 0:
-            if recipes_limit_integer < 0:
                 return Response(
-                    RECIPES_LIMIT_ERROR_MESSAGE,
-                    status=status.HTTP_400_BAD_REQUEST
+                    error_message, status=status.HTTP_400_BAD_REQUEST
                 )
-            # передаём обработанный параметр recipes_limit в context
-            context['recipes_limit'] = recipes_limit_integer
+            context['recipes_limit'] = recipes_limit
 
         queryset = Subscription.objects.filter(
             user=request.user.id
@@ -165,28 +156,16 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     )
     def subscribe(self, request, author_id):
         user = request.user
-
         context = super().get_serializer_context()
-
         recipes_limit = request.query_params.getlist('recipes_limit')
 
         if recipes_limit:
-            # проверка: указанный в запросе параметр
-            # "recipes_limit" можно преобразовать в int
-            data_dictionary = get_integer_list(recipes_limit, 'recipes_limit')
-            error_message = data_dictionary.get('error_message')
+            recipes_limit, error_message = check_recipes_limit(recipes_limit)
             if error_message:
-                return Response(error_message)
-            # если передано несколько значений, берётся последнее:
-            recipes_limit_integer = data_dictionary.get('list')[-1]
-            # проверяем, что заначение параметра >= 0:
-            if recipes_limit_integer < 0:
                 return Response(
-                    RECIPES_LIMIT_ERROR_MESSAGE,
-                    status=status.HTTP_400_BAD_REQUEST
+                    error_message, status=status.HTTP_400_BAD_REQUEST
                 )
-            # передаём обработанный параметр recipes_limit в context
-            context['recipes_limit'] = recipes_limit_integer
+            context['recipes_limit'] = recipes_limit
 
         if user.id == int(author_id):
             return Response(
