@@ -3,13 +3,12 @@ from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
+from api.fields import Base64ToImageField
+from api.utils import (check_id_list, check_ingredients_data,
+                       get_ingredients_objects)
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from users.models import User
-
-from .fields import Base64ToImageField
-from .utils import (check_id_list, check_ingredients_data,
-                    get_ingredients_objects)
 
 AMOUNT_ERROR_MESSAGE = ('количество ингредиента укажите числом с точкой в '
                         'качестве разделителя десятичной части.')
@@ -67,10 +66,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def validate_password(self, value):
-        try:
-            validate_password(value)
-        except serializers.ValidationError as error:
-            raise serializers.ValidationError(str(error))
+        validate_password(value)
         return value
 
     def create(self, validated_data):
@@ -91,10 +87,7 @@ class UserPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
 
     def validate_new_password(self, value):
-        try:
-            validate_password(value)
-        except serializers.ValidationError as error:
-            raise serializers.ValidationError(str(error))
+        validate_password(value)
         return value
 
     def validate_current_password(self, value):

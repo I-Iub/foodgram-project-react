@@ -1,10 +1,10 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import User
+from users.models import User
 
 
-class EmailPasswordPasswordSerializer(serializers.Serializer):
+class EmailPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
     password = serializers.CharField(write_only=True)
 

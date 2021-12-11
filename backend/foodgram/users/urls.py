@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import login, logout
+from users.views import login, logout
 
 urlpatterns = [
     path('auth/token/login/', login, name='login'),

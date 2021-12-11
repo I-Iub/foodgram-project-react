@@ -4,14 +4,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .permissions import UserPermissions
-from .serializers import EmailPasswordPasswordSerializer
+from users.permissions import UserPermissions
+from users.serializers import EmailPasswordSerializer
 
 
 @api_view(['POST'])
 @permission_classes([UserPermissions])
 def login(request):
-    serializer = EmailPasswordPasswordSerializer(
+    serializer = EmailPasswordSerializer(
         data=request.data
     )
     serializer.is_valid(raise_exception=True)

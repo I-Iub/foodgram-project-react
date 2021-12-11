@@ -11,20 +11,19 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.filters import IngredientFilter, RecipeFilter
+from api.pagination import CustomPagination
+from api.serializers import (FavoriteSerializer, MeasurementSerializer,
+                             RecipeSerializer, ShoppingCartSerializer,
+                             ShortRecipeSerializer, SubscriptionSerializer,
+                             TagSerializer, UserPasswordSerializer,
+                             UserSerializer)
+from api.utils import get_integer_list, get_object_if_exists
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from users.models import User
 from users.permissions import (OrganizerOwner, RecipeAuthorOrReadOnly,
                                UserPermissions)
-
-from .filters import IngredientFilter, RecipeFilter
-from .pagination import CustomPagination
-from .serializers import (FavoriteSerializer, MeasurementSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
-                          ShortRecipeSerializer, SubscriptionSerializer,
-                          TagSerializer, UserPasswordSerializer,
-                          UserSerializer)
-from .utils import get_integer_list, get_object_if_exists
 
 RECIPES_LIMIT_ERROR_MESSAGE = ("Ошибка: в параметре запроса 'recipes_limit' "
                                "должно быть указано целое неотрицательное "

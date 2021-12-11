@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Favorite, ShoppingCart, Subscription
+from organizer.models import Favorite, ShoppingCart, Subscription
 
 
 class FavoriteAdmin(admin.ModelAdmin):
