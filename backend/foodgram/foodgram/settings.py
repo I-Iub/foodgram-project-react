@@ -74,7 +74,7 @@ DATABASES = {
 #         'ENGINE': 'django.db.backends.sqlite3',
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
-# }  # 1234568913
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
