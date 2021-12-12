@@ -47,7 +47,6 @@ class IngredientSerializer(serializers.ModelSerializer):
         if ingredients_errors:
             raise serializers.ValidationError(ingredients_errors)
         return data
-        # return super().to_internal_value(data)  # попробовать переделать так, чтобы здесь вызвать super()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -59,13 +58,7 @@ class TagSerializer(serializers.ModelSerializer):
         tag_errors = check_id_list(Tag, [data])
         if tag_errors:
             raise serializers.ValidationError(tag_errors)
-        # tag = get_object_or_404(Tag, pk=data)
         return data
-        # return {'name': tag.name, 'color': tag.color, 'slug': tag.slug}
-        # return super().to_internal_value(data)  # попробовать переделать так, чтобы здесь вызвать super()
-
-    # def create(self, validated_data):
-    #     return Tag.objects.get_or_create(**validated_data)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -152,64 +145,29 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def validate_cooking_time(self, value):
-        print('VALIDATE_COOKING_TIME')
-        if value < 0:
+        if value < 1:
             raise serializers.ValidationError(
-                'Время приготовления должно быть неотрицательным целым числом.'
+                'Время приготовления должно быть больше нуля.'
             )
         return value
 
     def validate(self, data):
-        print('RECIPE VALIDATE: DATA#############  ', data)  # ________________________________________
-        cooking_time = data.get('cooking_time')
-        if not cooking_time:
-            raise serializers.ValidationError({
-                'errors': 'Укажите время приготовления.'
-            })
-
-        # errors = {}
-
-        # tag_list = self.initial_data.get('tags')
-        # if not tag_list:
-        #     errors['tags'] = [REQUIRED_FIELD]
-        # else:
-        #     tag_errors = check_id_list(Tag, tag_list)
-        #     if tag_errors:
-        #         errors['tags'] = tag_errors
-
-        # initial_ingredients_list = self.initial_data.get('ingredients')
-        # if not initial_ingredients_list:
-        #     errors['ingredients'] = [REQUIRED_FIELD]
-        # else:
-        #     ingredients_errors = check_ingredients_data(
-        #         initial_ingredients_list
-        #     )
-        #     if ingredients_errors:
-        #         errors['ingredients'] = ingredients_errors
-
-        # if errors:
-        #     raise serializers.ValidationError(errors)
-
         # Проверка наличия в базе Рецепта, похожего на сохраняемый.
         # Сперва извлекаем image, т.к. передаётся в виде ContentType, который
         # меняется с каждым запросом:
         if 'image' in data:
             data.pop('image')
-        tags = data.pop('tags')  # можно ли так делать: сначала вырезал, потом ниже вставил_____
-        ingredients = data.pop('ingredients')
-        print('RECIPE VALIDATE: INGREDIENTS#############  ', ingredients)
+        tags = data.pop('tags')
+        ingredients = data.pop('ingredients')  # не учитываем при проверке
         if Recipe.objects.filter(tags__id__in=tags, **data).exists():
             raise serializers.ValidationError({
-                'errors': 'У вас уже есть такой рецепт'
+                'errors': 'У вас уже есть такой рецепт.'
             })
-
         data['tags'] = tags
-        # data['ingredients'] = initial_ingredients_list
         data['ingredients'] = ingredients
         return data
 
     def create(self, validated_data):
-        print('RECIPE CREATE validated_data', validated_data)
         tag_list = validated_data.pop('tags')
         if tag_list:
             tags_objects = [
@@ -222,7 +180,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
         recipe.ingredients.set(ingredients_objects)
-
         return recipe
 
     def update(self, instance, validated_data):
