@@ -18,8 +18,7 @@ from api.serializers import (FavoriteSerializer, MeasurementSerializer,
                              ShortRecipeSerializer, SubscriptionSerializer,
                              TagSerializer, UserPasswordSerializer,
                              UserSerializer)
-from api.utils import (check_recipes_limit, get_integer_list,
-                       get_object_if_exists)
+from api.utils import check_recipes_limit, get_object_if_exists
 from organizer.models import Favorite, ShoppingCart, Subscription
 from recipes.models import Ingredient, Measurement, Recipe, Tag
 from users.models import User
