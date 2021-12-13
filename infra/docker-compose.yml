@@ -32,8 +32,8 @@ services:
       - static_value:/var/html/static_foodgram/
       - media_value:/var/html/media/
       - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
-      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
+      - ./docs:/usr/share/nginx/html/api/docs/
+      - ./docs:/usr/share/nginx/html/api/docs/
     depends_on:
       - web
 
