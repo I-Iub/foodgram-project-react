@@ -156,13 +156,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         # Сперва извлекаем image, т.к. передаётся в виде ContentType, который
         # меняется с каждым запросом:
         if 'image' in data:
-            data.pop('image')
+            image = data.pop('image')
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')  # не учитываем при проверке
         if Recipe.objects.filter(tags__id__in=tags, **data).exists():
             raise serializers.ValidationError({
                 'errors': 'У вас уже есть такой рецепт.'
             })
+        data['image'] = image
         data['tags'] = tags
         data['ingredients'] = ingredients
         return data

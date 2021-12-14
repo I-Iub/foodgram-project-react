@@ -75,7 +75,7 @@ jobs:
             sudo docker-compose rm web
             sudo docker-compose rm frontend
             # Создаст файл для переменных окружения
-            sudo touch .env 
+            touch .env
             # Наполнит файл переменными окружения из секретов GitHub
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
