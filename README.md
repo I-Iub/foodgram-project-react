@@ -23,7 +23,7 @@ https://github.com/I-Iub/foodgram-project-react.git
 ```
 Перейдите в папку проекта "foodgram-project-react/infra" (в ней находится файл docker-compose). В корневой папке необходимо создать файл ".env". Содержание файла должно быть таким:
 ```
-SECRET_KEY=****                              # <--ваш SECRET_KEY
+SECRET_KEY=***                              # <--ваш SECRET_KEY
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=postgres
 POSTGRES_USER=postgres
