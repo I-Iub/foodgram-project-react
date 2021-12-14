@@ -175,8 +175,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                 get_object_or_404(Tag, pk=tag_id) for tag_id in tag_list
             ]
 
-        initial_ingredients_list = validated_data.pop('ingredients')
-        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
+        ingredients_list = validated_data.pop('ingredients')
+        ingredients_objects = get_ingredients_objects(ingredients_list)
 
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_objects)
@@ -191,8 +191,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             ]
             instance.tags.set(tags_objects)
 
-        initial_ingredients_list = validated_data.pop('ingredients')
-        ingredients_objects = get_ingredients_objects(initial_ingredients_list)
+        ingredients_list = validated_data.pop('ingredients')
+        ingredients_objects = get_ingredients_objects(ingredients_list)
         instance.ingredients.set(ingredients_objects)
 
         return super().update(instance, validated_data)
