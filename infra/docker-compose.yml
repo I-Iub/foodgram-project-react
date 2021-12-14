@@ -22,17 +22,18 @@ services:
   frontend:
     image: zealousblack/foodgram_frontend:latest
     volumes:
-      - ../frontend/:/app/result_build/
+      - ./frontend/:/app/result_build/
   nginx:
     image: nginx:1.19.3
     ports:
       - 80:80
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - static_value:/var/html/static_foodgram/
       - media_value:/var/html/media/
-      - ./foodgram/frontend/build:/usr/share/nginx/html/
-      - ./foodgram/docs:/usr/share/nginx/html/api/docs/
+      - ./frontend/build:/usr/share/nginx/html/
+      - ./docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
+      - ./docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
     depends_on:
       - web
 
