@@ -163,7 +163,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'errors': 'У вас уже есть такой рецепт.'
             })
-        data['image'] = image
+        if 'image' in data:
+            data['image'] = image
         data['tags'] = tags
         data['ingredients'] = ingredients
         return data
