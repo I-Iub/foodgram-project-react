@@ -69,13 +69,14 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo cd foodgram/
+            cd foodgram/
             sudo docker pull zealousblack/foodgram
             sudo docker pull zealousblack/foodgram_frontend
             sudo docker-compose stop
             sudo docker-compose rm web
             sudo docker-compose rm frontend
             # Создаст файл для переменных окружения
+            sudo rm .env
             touch .env 
             # Наполнит файл переменными окружения из секретов GitHub
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
