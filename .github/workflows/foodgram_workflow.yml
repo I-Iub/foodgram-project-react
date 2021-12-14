@@ -69,6 +69,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
+            sudo cd foodgram/
             sudo docker pull zealousblack/foodgram
             sudo docker pull zealousblack/foodgram_frontend
             sudo docker-compose stop
