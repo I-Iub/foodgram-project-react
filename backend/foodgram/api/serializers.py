@@ -161,7 +161,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             image = data.pop('image')
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')  # не учитываем при проверке
-        if Recipe.objects.filter(tags__id__in=tags, **data).exists():
+        if (self.context.get('request').method == 'POST'
+                and Recipe.objects.filter(tags__id__in=tags, **data).exists()):
             raise serializers.ValidationError({
                 'errors': 'У вас уже есть такой рецепт.'
             })
