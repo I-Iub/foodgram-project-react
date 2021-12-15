@@ -155,7 +155,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         # Проверка наличия в базе Рецепта, похожего на сохраняемый.
         # Сперва извлекаем image, т.к. передаётся в виде ContentType, который
         # меняется с каждым запросом:
+        is_image_in_data = False
         if 'image' in data:
+            is_image_in_data = True
             image = data.pop('image')
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')  # не учитываем при проверке
@@ -163,7 +165,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'errors': 'У вас уже есть такой рецепт.'
             })
-        if 'image' in data:
+        if is_image_in_data:
             data['image'] = image
         data['tags'] = tags
         data['ingredients'] = ingredients
