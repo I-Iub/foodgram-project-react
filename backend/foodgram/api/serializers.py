@@ -160,12 +160,21 @@ class RecipeSerializer(serializers.ModelSerializer):
             is_image_in_data = True
             image = data.pop('image')
         tags = data.pop('tags')
-        ingredients = data.pop('ingredients')  # не учитываем при проверке
+        # ингредиенты не учитываем при проверке уникальности:
+        ingredients = data.pop('ingredients')
+        # проверка уникальности рецепта только при POST-запросе:
         if (self.context.get('request').method == 'POST'
                 and Recipe.objects.filter(tags__id__in=tags, **data).exists()):
             raise serializers.ValidationError({
                 'errors': 'У вас уже есть такой рецепт.'
             })
+        # проверка наличия повторяющихся ингредиентов:
+        ingredients_ids = [ingredient.get('id') for ingredient in ingredients]
+        if len(ingredients_ids) != len(set(ingredients_ids)):
+            raise serializers.ValidationError({
+                'errors': 'Ингредиенты не должны повторяться.'
+            })
+
         if is_image_in_data:
             data['image'] = image
         data['tags'] = tags
