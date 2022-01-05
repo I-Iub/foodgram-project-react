@@ -97,7 +97,7 @@ docker-compose down
 ```
 python manage.py load_ingredients
 ```
-При этом в папке foodgram-project-react/backend/foodgram/data/ должен быть файл ingredients.csv.
+При этом в папке "foodgram-project-react/backend/foodgram/data/" должен быть файл "ingredients.csv".
 
 ---
 <a id=link></a>
